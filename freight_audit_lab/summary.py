@@ -25,7 +25,8 @@ ASSUMPTION_KEYS = {"min_precision": "evaluation.min_precision", "min_material_ga
                    "false_dispute_cost": "evaluation.false_dispute_cost",
                    "review_minutes_per_flag": "evaluation.review_minutes_per_flag",
                    "analyst_cost_per_hour": "evaluation.analyst_cost_per_hour",
-                   "systemic_multiple": "evaluation.systemic.multiple", "systemic_alpha": "evaluation.systemic.alpha"}
+                   "systemic_multiple": "evaluation.systemic.multiple", "systemic_alpha": "evaluation.systemic.alpha",
+                   "large_shipment_error_pct": "accruals.large_shipment_error_pct"}
 COUNT_KEYS = ["flags", "tp", "fp", "fn"]
 RATE_KEYS = ["precision", "recall", "dollar_recall", "flagged_dollars_estimate"]
 
@@ -144,6 +145,9 @@ def accrual_block(accuracy, sensitivity):
             "direction": "below" if error < 0 else "above", "gap_word": "shortfall" if error < 0 else "excess",
             "mape_pct_estimate": round(headline["mape_pct_estimate"], 4),
             "bias_pct_estimate": round(headline["bias_pct_estimate"], 4),
+            "shipment_mape_pct_estimate": float(total["shipment_mape_pct_estimate"]),
+            "shipment_median_ape_pct_estimate": float(total["shipment_median_ape_pct_estimate"]),
+            "shipment_share_over_band_pct_estimate": float(total["shipment_share_over_band_pct_estimate"]),
             "worst_month": {"month_end": str(worst["month_end"]), "error_pct_estimate": float(worst["error_pct_estimate"])},
             "linehaul_fuel_error_pct_estimate": float(total["lh_fsc_error_pct_estimate"]),
             "accessorial_error_pct_estimate": float(total["accessorial_error_pct_estimate"]),
@@ -158,7 +162,9 @@ def tolerance_block(recommended):
     """Current, best-scoring and recommended value of each swept tolerance, and whether the recommendation changes it."""
     each = {name: {k: rec[k] for k in ("error_type", "carrier_mode", "current", "best_point", "recommended", "changed")}
             for name, rec in recommended.items()}
-    return {"swept": len(each), "changed": sum(bool(v["changed"]) for v in each.values()), "each": each}
+    gains = [rec["best_net_value_estimate"] - rec["current_net_value_estimate"] for rec in recommended.values()]
+    return {"swept": len(each), "changed": sum(bool(v["changed"]) for v in each.values()),
+            "largest_gain_estimate": round(max(gains), 2), "each": each}
 
 
 def build_summary(cfg, out_dir=OUTPUT_DIR, data_dir=REPO_ROOT / "data"):

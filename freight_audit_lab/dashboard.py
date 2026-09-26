@@ -14,6 +14,7 @@ import pandas as pd
 
 from freight_audit_lab.audit.engine import OUTPUT_DIR
 from freight_audit_lab.csv_io import read_csv
+from freight_audit_lab.exceptions import p_text
 
 OUTPUT_FILES = ["audit_invoice_summary", "eval_by_type", "eval_engine_vs_baseline", "eval_traps", "baseline_fp_causes", "exception_queue",
                 "sweep", "systemic_findings", "accrual_accuracy", "accrual_sensitivity", "journal_entries"]
@@ -126,7 +127,7 @@ def systemic_finding_text(o, carrier_names):
     f = found.iloc[0]
     start, end = pd.Timestamp(f["window_start"]), pd.Timestamp(f["window_end"])
     span = f"{start:%b %Y} to {end:%b %Y}"
-    p = "p < 1e-300" if f["p_value"] < 1e-300 else f"p = {f['p_value']:.1e}"
+    p = p_text(f["p_value"])
     over = ("" if np.isnan(f["avg_billed_over_expected"])
             else f", billed {pct(f['avg_billed_over_expected'])} above expected on average")
     others = len(found) - 1
@@ -151,7 +152,7 @@ def trap_finding_text(o):
             f"The engine raised {engine_fp} false flag{'s' if engine_fp != 1 else ''} in total.")
 
 
-def accrual_finding_text(o):
+def accrual_finding_text(o, driver_share):
     """Bullet 3: what drives accrual error, including the share due to authorizations recorded late.
 
     Shares are of the net (signed) error over the whole period, from the ALL rows of accrual_accuracy.csv and
@@ -166,7 +167,7 @@ def accrual_finding_text(o):
     accessorial_share_of_accrual = float(total["accessorial_accrual_estimate"]) / float(total["accrual_estimate"])
     late_share = float(sens["late_auth_effect_estimate"]) / abs(error)
     mape = float(monthly["error_pct_estimate"].abs().mean())
-    driver = "Accessorials drive accrual error" if accessorial_share_of_error > 0.5 else "Linehaul and fuel drive accrual error"
+    driver = "Accessorials drive accrual error" if accessorial_share_of_error > driver_share else "Linehaul and fuel drive accrual error"
     return (f"**{driver}.** Month-end accruals ran {pct(abs(float(total['error_pct_estimate'])), 2)} {direction} "
             f"eventual payable overall (mean absolute monthly error {pct(mape, 2)}, estimates). Accessorials are "
             f"{pct(accessorial_share_of_accrual)} of the accrual but {pct(accessorial_share_of_error, 0)} of the net {gap}. "
@@ -174,6 +175,6 @@ def accrual_finding_text(o):
             f"one at delivery would remove that share.")
 
 
-def key_findings(o, carrier_names):
+def key_findings(o, carrier_names, driver_share):
     """The three bullets for the Overview tab, in order: systemic finding, top false-flag cause, accrual drivers."""
-    return [systemic_finding_text(o, carrier_names), trap_finding_text(o), accrual_finding_text(o)]
+    return [systemic_finding_text(o, carrier_names), trap_finding_text(o), accrual_finding_text(o, driver_share)]

@@ -3,26 +3,26 @@
 
 Three one-sentence findings about **method**, not about injected error rates. Every number comes from `outputs/summary.json`, which is built from the output files named under each finding. All data is synthetic and all dollar figures are estimates.
 
-## 1. A careful baseline's duplicate flags were mostly false, and the cause was a missing business rule
+## 1. A baseline without business context: its duplicate flags were mostly false, and the cause was a missing business rule
 
-> A careful spreadsheet baseline flagged 334 duplicate invoices and 60% of them were wrong; 100% of the wrong ones were rebills or balance-due invoices, which legitimately repeat the original invoice's BOL and which a BOL-only match cannot tell from a resend.
+> A spreadsheet-style baseline without business context flagged 334 duplicate invoices and 60% of them were wrong; 100% of the wrong ones were rebills or balance-due invoices, which legitimately repeat the original invoice's BOL and which a BOL-only match cannot tell from a resend.
 
 - Numbers: 200 false duplicate flags out of 334 (59.9%); 100 on rebill invoices and 100 on balance-due invoices. The engine, which links a rebill to the invoice it replaces and treats a balance-due invoice as a different charge, raised 0 false duplicate flags.
 - Sources: `outputs/eval_by_type.csv` (duplicate_invoice rows), `outputs/baseline_fp_causes.csv` (the rebill / balance due cause).
-- Caveat: the baseline is deliberately given no supersession logic; the finding is about which rule closes the gap, not about spreadsheets being bad.
+- Caveat: the baseline is deliberately given no supersession logic, so it is designed to fail here; the finding is about which context closes the gap and how much, not about spreadsheets being bad.
 
 ## 2. A peer-rate test turns many separate fuel flags into one carrier-level escalation
 
-> Carrier F Trucking's fuel surcharge was overbilled by only about $44 (estimate) on a typical flagged invoice, yet a one-sided binomial test against the other TL carriers showed 178 of 182 invoices flagged in Aug 2025 to Oct 2025 (97.8% against 1.5%, p = 1.2e-320), which points to one wrong fuel table and not 178 separate mistakes.
+> Carrier F Trucking's fuel surcharge was overbilled by only about $44 (estimate) on a typical flagged invoice, yet a one-sided binomial test against the other TL carriers showed 178 of 182 invoices flagged in Aug 2025 to Oct 2025 (97.8% against 1.5%, p < 1e-300), which points to one wrong fuel table and not 178 separate mistakes.
 
 - Numbers: billed 9.1% above expected on average; significance threshold after Bonferroni correction 2.1e-05.
 - Sources: `outputs/systemic_findings.csv`, `outputs/audit_flags.csv` (the mean flagged dollars).
-- Caveat: the same test also flagged 1 weaker pattern (Carrier C Express, weight_overbilling, p = 1.6e-05 against a threshold of 2.1e-05) that was not planted, so a finding is a reason to ask the carrier, not proof.
+- Caveat: the same test also flagged 1 weaker pattern (Carrier C Express, weight_overbilling, p = 1.6e-05 against a threshold of 2.1e-05) a carrier configured to err more often, not a second planted systemic issue, so a finding is a reason to ask the carrier, not proof.
 
 ## 3. Accessorials are a small part of accrued dollars and most of the accrual error, and late authorizations explain much of it
 
 > Month-end accruals landed 0.24% below eventual payable overall, but accessorials were only 1.6% of accrued dollars and 61% of the net shortfall, and 43% of the net shortfall came from authorizations recorded after month-end, which an accrual cannot use.
 
-- Numbers: net shortfall $16,491 on accruals of $6,767,853 (estimates); mean absolute monthly error 0.31%; recording every authorization at delivery would have moved the accrual by $7,095 (estimate) and left the overall error at 0.14% below payable.
+- Numbers: net shortfall $16,491 against a sum of the 12 month-end balances of $6,767,853 (estimates; a shipment still unbilled at the next month-end is counted again, so this is not one accrual amount); mean absolute monthly error 0.31%, but 5.6% per shipment-month (median 3.1%); recording every authorization at delivery would have moved the accrual by $7,095 (estimate) and left the overall error at 0.14% below payable.
 - Sources: `outputs/accrual_accuracy.csv` (ALL row), `outputs/accrual_sensitivity.csv` (ALL row).
-- Caveat: shares are of the net signed error over the whole period, so months of opposite sign offset each other; the share of late authorizations is set by `accessorials.late_authorization_share` in the config.
+- Caveat: linehaul and fuel accrual accuracy is close to exact by construction (generator, audit and accruals share `contract.py`), and monthly errors net out; shares are of the net signed error over the whole period, so months of opposite sign offset each other; the share of late authorizations is set by `accessorials.late_authorization_share` in the config.

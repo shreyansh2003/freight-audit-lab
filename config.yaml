@@ -171,3 +171,5 @@ accruals:
   trailing_days: 90
   default_accessorial_per_shipment: {LTL: 12.0, TL: 8.0}
   accounts: {expense: "6100 Freight Expense", liability: "2150 Accrued Freight"}
+  large_shipment_error_pct: 0.10      # a shipment-month accrual off by more than this share of its payable counts as a large error
+  accessorial_driver_share: 0.5       # dashboard says accessorials "drive" accrual error when they are more than this share of the net error

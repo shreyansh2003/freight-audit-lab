@@ -307,7 +307,8 @@ quoted here: they live in `outputs/` (start with `outputs/summary.json`).
   a false positive. It happens once in the default run and is left as it is: loosening the fallback would
   let generated phantoms match real shipments, and a real AP team would resolve it by hand.
   *Change:* `normalization.fallback_match`.
-- **Duplicate pool** is live originals and rebills. The earliest received is kept; a later copy is a
+- **Duplicate pool** is live originals and rebills. The earliest received is kept (received on the same day: the lower `invoice_id` is kept, which is a
+  string sort with no business meaning, so a same-day pair is flagged in an arbitrary but repeatable direction); a later copy is a
   duplicate if its total is within `duplicate_amount` (inclusive, compared at cent precision) of an
   earlier copy in the group and it was received within `duplicate_window_days` (inclusive). Groups are the
   matched shipment, or carrier + canonical BOL for unmatched invoices. A repeat of the same carrier +
@@ -339,9 +340,10 @@ quoted here: they live in `outputs/` (start with `outputs/summary.json`).
   and capped at the invoice total. Every dollar figure here is an estimate.
 - **Process metric.** Accessorials authorized after the invoice date but before `audit_as_of` are counted in
   `outputs/audit_process_metrics.csv`, not flagged.
-- **Baseline** (`audit/baseline.py`) is a *careful spreadsheet* pass, not a strawman: the comparison is meant
-  to be about business logic, not string formatting. It runs the *same rule functions and tolerances* as
-  the engine on deliberately naive inputs. What it does like a careful analyst: strip every non-digit
+- **Baseline** (`audit/baseline.py`) is a spreadsheet pass *designed to lack business context*: it is built to fail on the
+  traps, so the point of the comparison is which context matters and how much (the false-flag causes), not that spreadsheets are
+  bad. It is not handicapped on string formatting. It runs the *same rule functions and tolerances* as
+  the engine on deliberately naive inputs. What it does like an analyst: strip every non-digit
   character from the BOL text and match carrier + those digits to the shipment's BOL (so `BOL#`, `BOL-`,
   spaces, dashes, and case are all handled). What it still gets wrong: no zero-padding and no fallback
   match (a BOL with its leading zeros dropped, or with two digits swapped, is a phantom); no supersession,
@@ -467,11 +469,19 @@ Result numbers are not quoted here; read them from `outputs/accrual_accuracy.csv
   to cents (`_estimate` columns). Reweigh certificates are not used: the shipper does not know a shipment will
   be reweighed when it accrues. Diesel is published by the start of the ship week, always before M for a
   delivered shipment, so it never looks ahead.
+- **Invoices are booked the day they are received.** The accrual treats an invoice as in the books, and its shipment as
+  billed, on `received_date`, with no AP approval or posting lag. A real close would have invoices received but not yet
+  posted, which would leave more shipments in the accrual population. *Change:* not configurable; add a lag to the
+  "billed at M" test in `billed_shipments`.
 - **Accessorial allowance** = the carrier's authorized accessorial dollars per billed shipment over invoices
   *received* in the trailing `accruals.trailing_days` up to M: accessorial charge lines (liftgate,
   residential, detention) whose shipment and code have an authorization recorded on or before M, divided by
   the number of distinct shipments the carrier billed in the window (original and rebill invoices; balance-due
   lines count in the dollars, not the shipments). Invoices already known at M to be superseded are left out.
+  Balance-due handling, stated once: a balance-due invoice adds its accessorial dollars to the numerator, but it is not
+  counted as a shipment in the denominator, because it bills an extra charge on a shipment an original or rebill invoice
+  already counts. (A balance-due line whose original was received outside the window therefore raises the average.) It
+  is the only invoice type that can move the numerator without the denominator, and there are few of them.
   A carrier with no invoices in the window gets `accruals.default_accessorial_per_shipment` for its mode. The
   allowance is the same for every shipment of a carrier at M. Because 25% of authorizations are recorded late
   (`accessorials.late_authorization_share`), some real accessorials are not yet "authorized" at M and drop out
@@ -501,7 +511,15 @@ Result numbers are not quoted here; read them from `outputs/accrual_accuracy.csv
   scenario accrual minus the built accrual. The table gives error and error % overall and for accessorials
   alone, as built and in the scenario, for each month and an ALL row. *Change:* `accessorials.late_authorization_share`
   sets how much paperwork is late in the generated data.
-
+- **Shipment-level accrual error** (`accuracy_by_month`, columns `shipment_*` in `accrual_accuracy.csv`). Monthly error is a net
+  figure, so shipments over- and under-accrued cancel. The shipment columns take |accrual - payable| / payable for every accrued
+  shipment-month with a payable above $0 (never-billed shipments have no percentage and are left out), and report the mean,
+  the median, and the share above `accruals.large_shipment_error_pct` (0.10, an arbitrary line for "a large miss"). A
+  shipment accrued at three month-ends is three rows. All three are estimates, because payable is.
+- **Linehaul and fuel accrual accuracy is close to exact by construction.** The generator, the audit and the accrual all price
+  from `freight_audit_lab/contract.py`, so a shipment's accrued linehaul and fuel differ from its billed contract charges
+  only through weight (reweighs are not known at M), rate rows, and injected errors. It shows the pipeline is coherent; it does
+  not show the method would be this accurate on a real book. The documents say so.
 
 ## Dashboard (Stage 7)
 
@@ -523,7 +541,7 @@ explanation. The Audit quality tab charts the causes and keeps the overlapping t
   net (signed) error, and the *late-authorization share* is the sensitivity's accrual change over the net error. Shares
   are of the net error over the whole period, so months of opposite sign net against each other; the mean absolute
   monthly error is quoted next to it. The headline wording ("Accessorials drive...") switches to linehaul and fuel if
-  accessorials are not most of the net error.
+  accessorials are not more than `accruals.accessorial_driver_share` (0.5, half) of the net error.
 - **The Data & assumptions tab is the one place that reads outside `outputs/`**: the normalization report and exceptions
   (`data/normalized/`), the diesel series (`data/reference/diesel_weekly.csv`) and `config.yaml`. They are pipeline
   inputs and diagnostics, not results. Carrier names come from `config.yaml`. The dashboard never reads
@@ -543,8 +561,8 @@ explanation. The Audit quality tab charts the causes and keeps the overlapping t
   the smallest p-value in `systemic_findings.csv` (`strongest_systemic_carrier`), and the pack's Markdown headings are
   turned into bold lines so they do not out-shout the page. Journal amounts are shown as text with blank cells, because
   a null number cell prints as "None". Streamlit's toolbar and Deploy button are hidden with `client.toolbarMode = "minimal"`
-  in `.streamlit/config.toml`. *Placeholder:* the "Code on GitHub" link points at `#` (`GITHUB_URL` in `streamlit_app.py`)
-  until the repository URL is known.
+  in `.streamlit/config.toml`. The byline links the author's LinkedIn and the "Code on GitHub" link
+  (`LINKEDIN_URL`, `GITHUB_URL` in `streamlit_app.py`).
 
 
 ## Cost estimates (Stage 5)
@@ -591,5 +609,13 @@ Result numbers are not quoted here; read them from `outputs/summary.json`.
 - **Accrual versus billed** (used in WALKTHROUGH question 6) is (accrual - `actual_billed`) / `actual_billed` over the same
   shipment-month population as the payable comparison. It is an estimate because the accrual is.
 - **README length** is at most 550 words of prose, not counting the results table or the code block; a test enforces it.
-- **Placeholders left for the author:** `[Your name]` and `[dashboard link]` in `docs/README.template.md`, and `GITHUB_URL`
-  in `streamlit_app.py`.
+- **One p-value style** (`exceptions.p_text`, used by the docs, the dashboard and the dispute packs): "p < 1e-300" below that
+  value (an exact 1e-320 is a subnormal float and means nothing), otherwise "p = 1.6e-05". `systemic_findings.csv` and `summary.json`
+  keep the raw p-value.
+- **Sweep wording.** The docs say no tolerance change clears the materiality bar and quote the largest gain
+  (`recommended_tolerances.largest_gain_estimate` in `summary.json`). That sentence is static prose: if a rerun ever recommends a
+  change, reread the README, WALKTHROUGH question 4 and `findings.md`. The bar is a judgment, not a finding.
+- **"Accruals" totals.** `accrual_estimate` in `accrual_accuracy.csv` and `summary.json` is the sum of the month-end balances, so
+  a shipment still unbilled at the next month-end is counted again. The documents call it that and never as one accrual amount.
+- **Author details** (LinkedIn, GitHub) are in `docs/README.template.md` and `GITHUB_URL` / the byline in `streamlit_app.py`.
+  The one placeholder left is `[dashboard link]` in `docs/README.template.md`, because the URL exists only after deploying.

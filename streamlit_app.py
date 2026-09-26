@@ -48,7 +48,8 @@ TOLERANCES = {"rate_pct": ("Rate overcharge check", "Tolerance: billed linehaul 
               "weight_pct": ("Weight check", "Tolerance: billed weight above shipment weight")}
 
 
-GITHUB_URL = "#"        # placeholder: replace with the repository link before publishing
+GITHUB_URL = "https://github.com/shreyansh2003/freight-audit-lab"
+LINKEDIN_URL = "https://www.linkedin.com/in/shreyansh2003/"
 
 # ---------------------------------------------------------------- loading
 
@@ -116,7 +117,7 @@ def overview_tab(o, names):
         tile("Recoverable, estimate (synthetic)", usd(m["recoverable_estimate"]),
              f"{pct(m['recoverable_pct_of_spend_estimate'], 2)} of billed; {m['invoices_flagged']:,} invoices flagged")
 
-    bullets = "".join(f"<li>{md_to_html(t)}</li>" for t in key_findings(o, names))
+    bullets = "".join(f"<li>{md_to_html(t)}</li>" for t in key_findings(o, names, get(cached_config(), "accruals.accessorial_driver_share")))
     st.markdown(f'<div class="findings"><div class="head">Key findings</div><ul>{bullets}</ul></div>',
                 unsafe_allow_html=True)
 
@@ -324,7 +325,8 @@ def data_tab(cfg):
 def main():
     st.markdown(CSS, unsafe_allow_html=True)
     st.title("Freight audit lab")
-    st.markdown('<div class="byline">A simulated freight invoice audit and month-end accrual pipeline, built by Shrey.'
+    st.markdown('<div class="byline">A simulated freight invoice audit and month-end accrual pipeline, built by '
+                f'<a href="{LINKEDIN_URL}" style="margin-left:0">Shreyansh Agrawal</a>.'
                 f'<a href="{GITHUB_URL}">Code on GitHub</a></div>', unsafe_allow_html=True)
     st.markdown('<div class="banner"><strong>Synthetic data. Every dollar figure is an estimate from a simulated dataset.</strong></div>',
                 unsafe_allow_html=True)

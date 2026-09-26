@@ -65,6 +65,7 @@ REQUIRED_KEYS = [
     # Stage 6
     "accruals.trailing_days", "accruals.default_accessorial_per_shipment.LTL",
     "accruals.default_accessorial_per_shipment.TL", "accruals.accounts.expense", "accruals.accounts.liability", "evaluation.top_n_invoices",
+    "accruals.large_shipment_error_pct", "accruals.accessorial_driver_share",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",

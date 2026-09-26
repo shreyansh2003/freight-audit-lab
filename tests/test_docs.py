@@ -73,7 +73,9 @@ def test_readme_is_one_page_and_keeps_its_placeholders():
     prose = re.sub(r"```.*?```", "", re.sub(r"<!--.*?-->", "", text, flags=re.S), flags=re.S)
     words = " ".join(line for line in prose.splitlines() if not line.startswith("|")).split()
     assert len(words) <= README_WORD_LIMIT
-    assert "[Your name]" in text and "[dashboard link]" in text
+    assert "[Shreyansh Agrawal](https://www.linkedin.com/in/shreyansh2003/)" in text
+    assert "(https://github.com/shreyansh2003/freight-audit-lab)" in text
+    assert "[dashboard link]" in text and "[Your name]" not in text            # the URL exists only after deploying
     assert text.index("## The comparison") < text.index("recoverable estimate")       # the comparison leads, dollars come later
     assert "built the generator" in text                                               # the plain statement about circularity
 
@@ -89,3 +91,10 @@ def test_walkthrough_has_twelve_numbered_questions_and_findings_has_three():
 def test_spec_starts_with_the_departures_note():
     first = (REPO_ROOT / "SPEC.md").read_text().splitlines()[0]
     assert first == "> Original build plan. Where the build departed from it, ASSUMPTIONS.md records the change and why."
+
+
+def test_p_values_use_one_style_and_the_floor_is_not_printed_as_a_number():
+    from freight_audit_lab.docs import render
+    assert render("{{p|pval}}", {"p": 1.2e-320}) == "p < 1e-300"
+    assert render("{{p|pval}}", {"p": 1.6e-05}) == "p = 1.6e-05"
+    assert "e-320" not in (REPO_ROOT / "README.md").read_text() + (REPO_ROOT / "WALKTHROUGH.md").read_text()

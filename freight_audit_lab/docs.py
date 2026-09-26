@@ -13,6 +13,7 @@ from datetime import date
 
 from freight_audit_lab.audit.engine import OUTPUT_DIR
 from freight_audit_lab.config import REPO_ROOT
+from freight_audit_lab.exceptions import p_text
 
 TEMPLATE_DIR = REPO_ROOT / "docs"
 PLACEHOLDER = re.compile(r"\{\{\s*([\w.]+)\s*(?:\|\s*(\w+)\s*)?\}\}")
@@ -26,7 +27,8 @@ FORMATS = {
     "pct0": lambda x: f"{x:.0%}",
     "pct2": lambda x: f"{x:.2%}",
     "abspct2": lambda x: f"{abs(x):.2%}",    # for "ran 0.24% below": the sentence carries the sign
-    "p": lambda x: f"{x:.1e}",               # 1.6e-05
+    "p": lambda x: f"{x:.1e}",               # 1.6e-05 (a threshold, not a finding's p-value)
+    "pval": p_text,                          # "p < 1e-300" or "p = 1.6e-05", the same style as the dashboard
     "month": lambda x: f"{date.fromisoformat(x):%b %Y}",
     "text": str,
 }

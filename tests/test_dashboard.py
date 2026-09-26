@@ -87,7 +87,7 @@ def test_false_flag_bullet_names_the_top_cause_out_of_the_additive_total_and_nev
 def test_accrual_bullet_shares_are_of_the_net_error(small):
     """Net error -$100: accessorials are -$60 (60%), authorizations recorded late explain +$40 (40%). Accessorials
     are $100 of a $2,000 accrual (5.0%). Mean absolute monthly error is (1% + 3%) / 2 = 2.00%."""
-    text = accrual_finding_text(small)
+    text = accrual_finding_text(small, 0.5)
     assert "0.10% below eventual payable" in text and "mean absolute monthly error 2.00%" in text
     assert "5.0% of the accrual but 60% of the net shortfall" in text and "explain 40% of the net shortfall" in text
 
@@ -117,6 +117,6 @@ def test_real_outputs_feed_every_function():
     assert m["false_disputes_avoided"] > 0 and m["engine_precision"] > m["baseline_precision"]
     assert m["recoverable_estimate"] == pytest.approx(recoverable_by_error_type(o)["recoverable_estimate"].sum(), abs=0.01)
     assert m["recoverable_estimate"] == pytest.approx(recoverable_by_carrier(o, names)["recoverable_estimate"].sum(), abs=0.01)
-    bullets = key_findings(o, names)
+    bullets = key_findings(o, names, 0.5)
     assert len(bullets) == 3 and all(b.startswith("**") for b in bullets)
     assert "CARF" in bullets[0]

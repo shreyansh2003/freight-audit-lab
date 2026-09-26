@@ -150,6 +150,12 @@ def systemic_findings(norm, flags, cfg):
     return found.drop_duplicates(["carrier_id", "error_type"]).sort_values(["carrier_id", "error_type"]).reset_index(drop=True)[FINDING_COLUMNS]
 
 
+def p_text(p):
+    """One p-value style everywhere: "p < 1e-300" below double precision's useful range (an exact 1e-320 is a
+    subnormal float and means nothing), otherwise "p = 1.6e-05"."""
+    return "p < 1e-300" if p < 1e-300 else f"p = {p:.1e}"
+
+
 def systemic_line(f):
     """The template sentence for one systemic finding, with the significance test's p-value."""
     same_year = f["window_start"].year == f["window_end"].year
@@ -157,10 +163,9 @@ def systemic_line(f):
     span = f"{first}-{last}" if same_year else f"{f['window_start'].strftime('%b %Y')}-{last}"
     over = ("" if np.isnan(f["avg_billed_over_expected"])
             else f" (on average {f['avg_billed_over_expected']:.1%} above expected)")
-    p = "< 1e-300" if f["p_value"] < 1e-300 else f"= {f['p_value']:.1e}"
     return (f"Possible systemic issue: {PATTERN_WORDS[f['error_type']]} on {f['carrier_rate']:.0%} of invoices shipped "
             f"{span} ({f['flagged']} of {f['invoices']}){over} vs {f['other_carriers_rate']:.0%} across other {f['mode']} "
-            f"carriers (one-sided binomial p {p}, below the Bonferroni-adjusted threshold {f['alpha_adjusted']:.1e}). "
+            f"carriers (one-sided binomial {p_text(f['p_value'])}, below the Bonferroni-adjusted threshold {f['alpha_adjusted']:.1e}). "
             f"{ASK[f['error_type']]}")
 
 

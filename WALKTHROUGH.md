@@ -10,7 +10,7 @@ A plain-English tour of the pipeline for its author, then the twelve questions a
 3. **Make it messy.** The invoices are written out as four different carrier file layouts, with different date styles, number styles and BOL formatting, the way real carriers do it.
 4. **Clean up and match.** `normalize.py` reads the four layouts into one table, fixes formats, drops nothing silently, and matches each invoice to a shipment, first by BOL and then by a tight fallback. It also works out which rebills replaced which invoices.
 5. **Re-price.** `rerate.py` prices each shipment again from the contract: the rate in force on the ship date, the reweigh certificate if one existed, and the fuel surcharge for the ship week.
-6. **Audit.** `audit/rules.py` compares what was billed with what should have been billed, with tolerances, and raises flags: duplicate, phantom, rate, fuel, weight, unauthorized accessorial. `audit/baseline.py` is the same idea done the way a careful analyst would in a spreadsheet, without the business context.
+6. **Audit.** `audit/rules.py` compares what was billed with what should have been billed, with tolerances, and raises flags: duplicate, phantom, rate, fuel, weight, unauthorized accessorial. `audit/baseline.py` is the same rules and tolerances done the way an analyst would in a spreadsheet, deliberately without the business context.
 7. **Score.** `evaluate.py` opens the answer key for the first time, and scores engine and baseline. `sweep.py` tries other tolerances. `exceptions.py` builds the work queue and one dispute summary per carrier, and runs the systemic-issue test.
 8. **Accrue.** `accruals.py` estimates, at each month-end, what freight was delivered but not yet billed, books it as a journal entry with a reversal, and later compares it with what was really owed.
 9. **Report.** `summary.py` collects the headline numbers into `outputs/summary.json`; `docs.py` fills this file, the README and `outputs/findings.md` from it. `streamlit_app.py` shows the same outputs.
@@ -23,7 +23,7 @@ Every flag turns into an email to a carrier and time from an analyst. A wrong fl
 
 ### 2. Your engine is 99.9% precise. Isn't that too good to be true?
 
-It is expected, and I say so up front. I wrote the generator that makes the errors and I wrote the engine that finds them, so the engine knows the rules of the world it is tested in. That shows the logic hangs together. It does not show the engine would hold up on real invoices. The results I would point to are the ones that are not automatic: where the careful baseline fails, where the engine misses, the systemic-issue test, and the accrual diagnosis.
+It is expected, and I say so up front. I wrote the generator that makes the errors and I wrote the engine that finds them, so the engine knows the rules of the world it is tested in. That shows the logic hangs together. It does not show the engine would hold up on real invoices. The results I would point to are the ones that are not automatic: where the baseline fails, where the engine misses, the systemic-issue test, and the accrual diagnosis. Even the accrual result is partly automatic: linehaul and fuel accruals are priced from `contract.py`, the same module the generator and the audit use, so their accuracy is close to exact by construction. What is not automatic is the accessorial error and how much of it is paperwork timing.
 
 ### 3. How do you know the engine is not peeking at the answer key?
 
@@ -31,7 +31,7 @@ Three ways. The answer key lives in one folder. The generator writes it, and onl
 
 ### 4. Why is recall only 89.7%? Is that a problem?
 
-The engine missed 129 injected errors. 118 of them were smaller than the tolerance I set on purpose, such as a rate error under 1% or a weight error under 2%. Each is worth only a few dollars. Together the missed errors are worth $691 (answer-key dollars), which is 99.8% recall by dollars. The other 11 are fuel surcharge errors too small to clear the fuel check. The sweep in `outputs/sweep.csv` shows what happens if I lower the tolerances: some more true flags, and false ones too.
+The engine missed 129 injected errors. 118 of them were smaller than the tolerance I set on purpose, such as a rate error under 1% or a weight error under 2%. Each is worth only a few dollars. Together the missed errors are worth $691 (answer-key dollars), which is 99.8% recall by dollars. The other 11 are fuel surcharge errors too small to clear the fuel check. The sweep in `outputs/sweep.csv` shows what happens if I move the tolerances. No change clears my $1,000 materiality bar (an estimate; the best gain is $182), so I keep all 4. That bar is my own judgment, not a finding: net value is built on estimated costs, and a gain of a few hundred dollars is not a reason to change a control. The weight tolerance in particular cannot be calibrated here, because the synthetic data has no scale noise.
 
 ### 5. How do your dollar figures avoid double counting?
 
@@ -39,7 +39,7 @@ An invoice can carry several flags, so I count each dollar once. For a duplicate
 
 ### 6. Why accrue what we should owe rather than what carriers bill?
 
-The books should show what the company owes, not what a carrier claims. Some invoices are wrong, and the company will dispute them. My accrual is priced from the contract, and I judge it against eventual payable, which is billed minus the audit's recoverable estimate. Overall it was 0.24% below payable. Measured against raw billing it would have looked 2.05% below, and I would be blaming the accrual for the carriers' mistakes. Both comparisons are estimates, because the recoverable dollars are.
+The books should show what the company owes, not what a carrier claims. Some invoices are wrong, and the company will dispute them. My accrual is priced from the contract, and I judge it against eventual payable, which is billed minus the audit's recoverable estimate. Overall it was 0.24% below payable, and the mean monthly error was 0.31%. Those are net figures: over- and under-accrued shipments cancel inside a month. One shipment at a time the mean error is 5.6% (median 3.1%), and 17% of shipment-months miss by more than 10%. Most of the precision at the month level is by construction, because the generator, the audit and the accrual all price from `contract.py`; the real test is the accessorial part. Measured against raw billing it would have looked 2.05% below, and I would be blaming the accrual for the carriers' mistakes. Both comparisons are estimates, because the recoverable dollars are.
 
 ### 7. How do you stop the accruals from looking ahead?
 
@@ -47,7 +47,7 @@ At each month-end I use only what the books held that day: invoices received by 
 
 ### 8. Isn't your baseline a strawman?
 
-I built it to be fair. It uses the same rules and the same tolerances as the engine, and it also runs the fuel check, so it is not missing a rule. It strips every non-digit character from BOLs, so it copes with prefixes, dashes and spaces. What it lacks is business context. It reads the first rate row and ignores effective dates, ignores reweigh certificates, treats every invoice as live even after a rebill replaced it, and checks authorizations as of the invoice date. Where context does not matter, the two tie: on fuel both raise 339 flags with the same precision. Where it matters, the baseline raises 1,552 false flags to the engine's 1.
+I built it to lack business context and nothing else, so the comparison shows which context matters and how much, not that spreadsheets are bad. It uses the same rules and the same tolerances as the engine, and it also runs the fuel check, so it is not missing a rule. It strips every non-digit character from BOLs, so it copes with prefixes, dashes and spaces. What it lacks is business context. It reads the first rate row and ignores effective dates, ignores reweigh certificates, treats every invoice as live even after a rebill replaced it, and checks authorizations as of the invoice date. Where context does not matter, the two tie: on fuel both raise 339 flags with the same precision. Where it matters, the baseline raises 1,552 false flags to the engine's 1.
 
 ### 9. What are the traps, and why put them in?
 

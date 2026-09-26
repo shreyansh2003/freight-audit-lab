@@ -416,6 +416,7 @@
   "recommended_tolerances": {
     "swept": 4,
     "changed": 0,
+    "largest_gain_estimate": 182.35,
     "each": {
       "rate_pct": {
         "error_type": "rate_overcharge",
@@ -458,7 +459,8 @@
     "review_minutes_per_flag": 6,
     "analyst_cost_per_hour": 45.0,
     "systemic_multiple": 3.0,
-    "systemic_alpha": 0.01
+    "systemic_alpha": 0.01,
+    "large_shipment_error_pct": 0.1
   },
   "accruals": {
     "shipment_month_accruals": 5793,
@@ -472,6 +474,9 @@
     "gap_word": "shortfall",
     "mape_pct_estimate": 0.0031,
     "bias_pct_estimate": -0.0025,
+    "shipment_mape_pct_estimate": 0.056,
+    "shipment_median_ape_pct_estimate": 0.0313,
+    "shipment_share_over_band_pct_estimate": 0.1731,
     "worst_month": {
       "month_end": "2025-09-30",
       "error_pct_estimate": -0.0073

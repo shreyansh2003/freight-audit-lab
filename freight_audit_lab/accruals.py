@@ -172,10 +172,16 @@ def shipment_actuals(norm, engine):
 # ---------------------------------------------------------------- accuracy
 
 
-def accuracy_by_month(detail):
+def accuracy_by_month(detail, cfg):
     """Accrual vs eventual payable by month-end, in total and split into linehaul + fuel vs accessorials,
     plus an ALL row. Error = accrual - payable (positive = over-accrued); % is of payable. A shipment
-    the carrier never billed has payable 0 and is counted in `never_billed_shipments`."""
+    the carrier never billed has payable 0 and is counted in `never_billed_shipments`.
+
+    The monthly error is a *net* figure: over- and under-accrued shipments cancel inside a month. The
+    `shipment_*` columns measure the error one shipment-month at a time, without that netting: the mean and
+    median of |accrual - payable| / payable, and the share of shipment-months off by more than
+    `accruals.large_shipment_error_pct`. Shipments with no payable (never billed) have no percentage and are left out."""
+    band = cfg["accruals"]["large_shipment_error_pct"]
     d = detail.assign(
         payable=detail["actual_payable_estimate"].fillna(0.0), billed=detail["actual_billed"].fillna(0.0),
         pay_core=detail["actual_payable_lh_fsc_estimate"].fillna(0.0),
@@ -194,6 +200,11 @@ def accuracy_by_month(detail):
             out[f"{name}_accrual_estimate"], out[f"{name}_payable_estimate"] = est.sum(), pay.sum()
             out[f"{name}_error_estimate"] = est.sum() - pay.sum()
             out[f"{name}_error_pct_estimate"] = (est.sum() - pay.sum()) / pay.sum() if pay.sum() else np.nan
+        billed = g[g["payable"] > 0]
+        ape = (billed["accrual_estimate"] - billed["payable"]).abs() / billed["payable"]
+        out["shipment_mape_pct_estimate"] = ape.mean()
+        out["shipment_median_ape_pct_estimate"] = ape.median()
+        out["shipment_share_over_band_pct_estimate"] = (ape > band).mean()
         return pd.Series(out)
 
     monthly = d.groupby("month_end").apply(summarize, include_groups=False).reset_index()
@@ -291,10 +302,10 @@ def run_accruals(norm, ref, cfg, engine):
     priced = price_shipments(ref["shipments"], ref, cfg)
     actuals = shipment_actuals(norm, engine)
     detail = accrue_all_months(priced, norm, ref, cfg, actuals)
-    accuracy = accuracy_by_month(detail)
+    accuracy = accuracy_by_month(detail, cfg)
     what_if = accrue_all_months(priced, norm, dict(ref, authorizations=authorizations_at_delivery(ref)), cfg, actuals)
     return {"detail": detail, "accuracy": accuracy,
-            "sensitivity": accrual_sensitivity(accuracy, accuracy_by_month(what_if)),
+            "sensitivity": accrual_sensitivity(accuracy, accuracy_by_month(what_if, cfg)),
             "journal_entries": journal_entries(detail, cfg)}
 
 

@@ -1,6 +1,6 @@
 """Baseline: what a quick spreadsheet pass over the same invoices would do.
 
-It is a *careful* spreadsheet pass, not a strawman. It uses the *same rule functions and
+It is a spreadsheet pass built to lack business context, and nothing else. It uses the *same rule functions and
 tolerances* as the engine, so any difference in results comes from the business-logic shortcuts
 below, not from string formatting or tighter/looser thresholds:
 

@@ -250,7 +250,7 @@ def test_accuracy_error_is_accrual_minus_payable_as_a_share_of_payable():
     norm, engine, ref, cfg = norm_and_engine(specs)
     priced = price_shipments(ref["shipments"], ref, cfg)
     detail = accrue_at(M, priced, norm, ref, cfg).merge(shipment_actuals(norm, engine), on="shipment_id", how="left")
-    acc = accuracy_by_month(detail).set_index("month_end")
+    acc = accuracy_by_month(detail, cfg).set_index("month_end")
     march = acc.loc[M]
     assert march["shipments_accrued"] == 2 and march["never_billed_shipments"] == 1          # S4 was never billed
     assert march["accrual_estimate"] == pytest.approx(727.33 + 1603.00, abs=CENT)
@@ -351,3 +351,11 @@ def test_outputs_are_written(accrued_full, tmp_path):
     assert len(sens) == 13 and "late_auth_effect_estimate" in sens.columns
     je = read_csv(tmp_path / "journal_entries.csv")
     assert list(je.columns) == ["je_id", "date", "type", "account", "cost_center", "debit", "credit", "memo"]
+
+
+def test_shipment_level_error_does_not_net_out_the_way_the_monthly_error_does(accrued_full):
+    """Each shipment-month is scored on its own: the mean absolute error can be far above the (netted) monthly one."""
+    accuracy = accrued_full[2]["accuracy"]
+    total = accuracy[accuracy["month_end"] == "ALL"].iloc[0]
+    assert total["shipment_mape_pct_estimate"] > abs(total["error_pct_estimate"])
+    assert 0 < total["shipment_median_ape_pct_estimate"] <= 1 and 0 <= total["shipment_share_over_band_pct_estimate"] <= 1
