@@ -1,10 +1,12 @@
 """Baseline: what a quick spreadsheet pass over the same invoices would do.
 
-It uses the *same rule functions and tolerances* as the engine, so any difference in results
-comes from the shortcuts below, not from tighter or looser thresholds:
+It is a *careful* spreadsheet pass, not a strawman. It uses the *same rule functions and
+tolerances* as the engine, so any difference in results comes from the business-logic shortcuts
+below, not from string formatting or tighter/looser thresholds:
 
-  - matches an invoice to a shipment on the BOL text exactly as printed (no cleanup, no
-    fallback), so formatting noise and typos look like phantoms;
+  - matches an invoice to a shipment on the digits of the BOL (it strips every non-digit character,
+    the cleanup any analyst would do). It does not zero-pad and has no fallback match, so a BOL
+    with its leading zeros dropped or two digits transposed still looks like a phantom;
   - knows nothing about supersession, so every invoice is audited, and calls any two invoices
     with the same carrier and BOL text duplicates whatever their type, so rebills and
     balance-due invoices look like duplicates of their parents;
@@ -33,12 +35,18 @@ from freight_audit_lab.rerate import (ACCESSORIAL_CODES, RATED_TYPES, RERATED_CO
                                       authorization_status)
 
 
-def match_on_raw_bol(inv, shipments):
-    """Attach the shipment whose BOL equals the invoice's BOL text exactly (same carrier)."""
+def bol_digits(bol_raw):
+    """The BOL with every non-digit removed ("BOL#0048-2913" -> "00482913"). No zero-padding."""
+    return bol_raw.fillna("").str.replace(r"\D", "", regex=True)
+
+
+def match_on_bol_digits(inv, shipments):
+    """Attach the shipment whose BOL equals the digits of the invoice's BOL text (same carrier)."""
     ship = shipments[["shipment_id", "carrier_id", "bol", "lane_id", "mode", "miles", "weight_lbs", "ship_date"]]
     ship = ship.rename(columns={"ship_date": "shipment_ship_date", "weight_lbs": "shipment_weight_lbs",
                                 "shipment_id": "naive_shipment_id"})
-    return inv.merge(ship, left_on=["carrier_id", "bol_raw"], right_on=["carrier_id", "bol"], how="left")
+    inv = inv.assign(_bol_digits=bol_digits(inv["bol_raw"]))
+    return inv.merge(ship, left_on=["carrier_id", "_bol_digits"], right_on=["carrier_id", "bol"], how="left")
 
 
 def naive_invoice_frame(matched, lines, ref, cfg):
@@ -96,20 +104,21 @@ def naive_accessorial_frame(matched, lines, auths):
 
 
 def naive_duplicates(inv):
-    """Flag every later-received invoice that shares carrier and BOL text with an earlier one."""
-    inv = inv.sort_values(["received_date", "invoice_id"])
-    inv = inv[inv.duplicated(["carrier_id", "bol_raw"], keep=False)]
+    """Flag every later-received invoice that shares carrier and BOL digits with an earlier one."""
+    inv = inv.assign(_bol_digits=bol_digits(inv["bol_raw"])).sort_values(["received_date", "invoice_id"])
+    inv = inv[inv["_bol_digits"] != ""]
+    inv = inv[inv.duplicated(["carrier_id", "_bol_digits"], keep=False)]
     out = []
-    for _, group in inv.groupby(["carrier_id", "bol_raw"], sort=False):
+    for _, group in inv.groupby(["carrier_id", "_bol_digits"], sort=False):
         first = group.iloc[0]
-        out += [duplicate_invoice_flag(r, first, "same BOL text") for r in group.iloc[1:].itertuples(index=False)]
+        out += [duplicate_invoice_flag(r, first, "same BOL digits") for r in group.iloc[1:].itertuples(index=False)]
     return flags_frame(out)
 
 
 def run_baseline(norm, ref, cfg):
     """Baseline flags in the same columns as the engine's, with `counted_in_recoverable`."""
     inv, lines = norm["invoices"], norm["invoice_lines"]
-    matched = match_on_raw_bol(inv, ref["shipments"])
+    matched = match_on_bol_digits(inv, ref["shipments"])
     naive_norm = {"invoices": inv.assign(match_method=np.where(inv["invoice_id"].isin(
         matched.loc[matched["naive_shipment_id"].notna(), "invoice_id"]), "exact", "unmatched"),
         is_superseded=False), "invoice_lines": lines}

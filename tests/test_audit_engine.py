@@ -119,9 +119,26 @@ def test_baseline_still_catches_a_real_duplicate():
     assert ("CARA:2", "duplicate_invoice") in eng and ("CARA:2", "duplicate_invoice") in base
 
 
-def test_baseline_calls_bol_noise_a_phantom_but_the_engine_does_not():
-    eng, base = both([invoice("1", "S1", bol="BOL#00000001")])
-    assert eng == set() and ("CARA:1", "phantom_invoice") in base
+def test_baseline_cleans_bol_formatting_so_noise_is_not_a_phantom():
+    """The baseline strips non-digits, like any analyst would, so prefixes, dashes, spaces and case are
+    matched by both methods. The comparison is about business logic, not string formatting."""
+    for noisy in ["BOL#00000001", "BOL-00000001", "0000 0001", "0000-0001", "bol00000001"]:
+        eng, base = both([invoice("1", "S1", bol=noisy)])
+        assert eng == set() and base == set(), noisy
+
+
+def test_baseline_has_no_zero_padding_or_fallback_so_dropped_zeros_and_typos_are_phantoms():
+    """A BOL with its leading zeros dropped ("1" for "00000001") or two digits swapped is what the engine's
+    canonical/fallback match rescues and the baseline does not."""
+    for broken in ["1", "00000010"]:
+        eng, base = both([invoice("1", "S1", bol=broken)])
+        assert eng == set() and ("CARA:1", "phantom_invoice") in base, broken
+
+
+def test_baseline_duplicates_also_key_on_the_cleaned_bol():
+    """A resend printed as "BOL#00000001" and the original printed as "00000001" are the same bill."""
+    eng, base = both([invoice("1", "S1"), invoice("2", "S1", bol="BOL#00000001", received="2025-03-28")])
+    assert ("CARA:2", "duplicate_invoice") in eng and ("CARA:2", "duplicate_invoice") in base
 
 
 def test_baseline_flags_a_correct_rate_after_an_upward_amendment():

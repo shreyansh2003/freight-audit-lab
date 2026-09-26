@@ -53,7 +53,8 @@ REQUIRED_KEYS = [
     # Stage 4
     "audit.tolerances.duplicate_amount", "audit.tolerances.duplicate_window_days",
     "audit.tolerances.rate_pct", "audit.tolerances.rate_abs", "audit.tolerances.fsc_ltl_pp",
-    "audit.tolerances.fsc_min_dollars", "audit.tolerances.fsc_tl_abs", "audit.tolerances.weight_pct",
+    "audit.tolerances.fsc_min_dollars", "audit.tolerances.fsc_tl_abs", "audit.tolerances.fsc_tl_pct",
+    "audit.tolerances.weight_pct",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",

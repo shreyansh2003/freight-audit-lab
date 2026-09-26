@@ -179,6 +179,26 @@ def test_fsc_tl_dollar_boundary(fsc, expect):
         assert hits["CARF:1"].dollar_impact_estimate == pytest.approx(2.01, abs=CENT)
 
 
+@pytest.mark.parametrize("fsc, expect", [(99.75, False), (99.76, True)])
+def test_fsc_tl_percentage_tolerance_scales_with_the_fuel_line(fsc, expect):
+    """With fsc_tl_pct at 5% the allowance on $95.00 expected fuel is $4.75, above the $2.00 floor:
+    a $4.75 gap passes and $4.76 is flagged."""
+    hits = flagged(fsc_mismatch, [invoice("1", "S4", fsc=fsc)], cfg=make_cfg(fsc_tl_pct=0.05))
+    assert ("CARF:1" in hits) == expect
+
+
+def test_fsc_tl_dollar_floor_wins_when_the_percentage_allowance_is_smaller():
+    """At the default 0.5% the allowance on $95.00 is $0.48, below the $2.00 floor, so the floor decides."""
+    assert flagged(fsc_mismatch, [invoice("1", "S4", fsc=96.90)]) == {}
+    assert "CARF:1" in flagged(fsc_mismatch, [invoice("1", "S4", fsc=97.10)])
+
+
+def test_fsc_tl_percentage_does_not_change_the_ltl_check():
+    """LTL still uses percentage points and the $1.00 floor: fsc_tl_pct is a TL setting."""
+    loose = make_cfg(fsc_tl_pct=0.50)
+    assert "CARA:1" in flagged(fsc_mismatch, [invoice("1", "S1", fsc=22.00)], cfg=loose)
+
+
 def test_fsc_tl_wrong_mpg_table_is_flagged():
     """Fuel billed at 5.5 mpg instead of 6.0: 0.95 / 5.5 x 600 = $103.64 vs $95.00."""
     hit = flagged(fsc_mismatch, [invoice("1", "S4", fsc=103.64)])["CARF:1"]

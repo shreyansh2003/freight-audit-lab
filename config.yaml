@@ -144,7 +144,8 @@ audit:
     rate_abs: 2.00
     fsc_ltl_pp: 0.25          # percentage points
     fsc_min_dollars: 1.00
-    fsc_tl_abs: 2.00
+    fsc_tl_abs: 2.00          # dollars
+    fsc_tl_pct: 0.005         # share of expected TL fuel; a flag needs impact above the larger of the two
     weight_pct: 0.02
 
 evaluation:

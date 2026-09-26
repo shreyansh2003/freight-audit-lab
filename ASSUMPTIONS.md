@@ -318,11 +318,13 @@ Grouped by area. Stage 8 will tidy this into its final form.
   knock-on, `gap x (1 + FSC%)`, so the flag threshold is a linehaul number and the estimate matches the
   Stage 2 impact definition. *Change:* `audit.tolerances.rate_pct`, `rate_abs`.
 - **Fuel rule.** LTL: implied FSC % minus expected % greater than `fsc_ltl_pp` points *and* dollar gap
-  greater than `fsc_min_dollars`. TL: dollar gap greater than `fsc_tl_abs`. Both dollar floors are flat, so
-  they behave like a percentage tolerance on small bills and a very tight one on large bills; a wrong
-  fuel week worth less than the floor is missed by design, and carrier rounding noise on a large TL fuel
-  line can exceed the flat TL floor. Expected FSC is computed on the *billed* linehaul so a rate error is
-  never counted a second time. *Change:* `audit.tolerances.fsc_*`.
+  greater than `fsc_min_dollars`. TL: dollar gap greater than `max(fsc_tl_abs, fsc_tl_pct x expected FSC)`,
+  strictly greater. *Why the percentage:* carrier rounding noise is a share of the fuel line, so on a long
+  TL lane a flat $2.00 floor flags noise; at `fsc_tl_pct` = 0.005 the allowance is $2.00 up to a $400 fuel
+  line and 0.5% above it (just over the generator's +/-0.4% rounding noise). The LTL dollar floor is still
+  flat, so a wrong fuel week worth less than the floor is missed by design. Expected FSC is computed on the
+  *billed* linehaul so a rate error is never counted a second time. *Change:*
+  `audit.tolerances.fsc_*` (`fsc_tl_pct` is also swept in Stage 5).
 - **Weight rule** flags when billed weight exceeds the reference weight by more than `weight_pct`
   (LTL only). It has no dollar floor, so a flag can be worth little when the min charge applies.
   *Change:* `audit.tolerances.weight_pct`.
@@ -335,12 +337,16 @@ Grouped by area. Stage 8 will tidy this into its final form.
   and capped at the invoice total. Every dollar figure here is an estimate.
 - **Process metric.** Accessorials authorized after the invoice date but before `audit_as_of` are counted in
   `outputs/audit_process_metrics.csv`, not flagged.
-- **Baseline** (`audit/baseline.py`) runs the *same rule functions and tolerances* on deliberately naive
-  inputs: exact raw-BOL text match (carrier + BOL string), no supersession (every invoice is audited), any
-  shared BOL text is a duplicate, the first rate row per carrier-lane at the shipment weight, no reweigh
-  certificates, and authorization asked as of the invoice date. It also runs the fuel check, which the
-  spec does not list, so it is not handicapped by a missing check. Two consequences to keep in mind:
-  format D carriers print a `BOL#` prefix on every invoice, so an exact-text match fails for almost all of
-  them and they are called phantoms (which also stops the baseline checking them for anything else); and
-  because it never separates weight from rate, a weight-inflated invoice can trip both checks and baseline
-  dollars can overlap. Baseline recoverable dollars use the engine's counting rule.
+- **Baseline** (`audit/baseline.py`) is a *careful spreadsheet* pass, not a strawman: the comparison is meant
+  to be about business logic, not string formatting. It runs the *same rule functions and tolerances* as
+  the engine on deliberately naive inputs. What it does like a careful analyst: strip every non-digit
+  character from the BOL text and match carrier + those digits to the shipment's BOL (so `BOL#`, `BOL-`,
+  spaces, dashes, and case are all handled). What it still gets wrong: no zero-padding and no fallback
+  match (a BOL with its leading zeros dropped, or with two digits swapped, is a phantom); no supersession,
+  so every invoice is audited; any two invoices with the same carrier + BOL digits are duplicates whatever
+  their type; the first rate row per carrier-lane at the shipment weight, ignoring effective dates; no
+  reweigh certificates; and authorization asked as of the *invoice* date. It also runs the fuel check, which
+  the spec does not list, so it is not handicapped by a missing check. Because it never separates weight
+  from rate, a weight-inflated invoice can trip both checks and baseline dollars can overlap. Baseline
+  recoverable dollars use the engine's counting rule. *Change:* the shortcuts are code, not config
+  (they are the point); tolerances are shared with the engine.

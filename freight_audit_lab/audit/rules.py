@@ -147,7 +147,9 @@ def fsc_mismatch(norm, rerated, ref, cfg):
 
     LTL carriers bill FSC as a percentage of linehaul from a diesel step table, so the test is
     the implied percentage vs the expected one (in percentage points) plus a dollar floor. TL
-    carriers bill $/mile x miles, so the test is the dollar gap alone.
+    carriers bill $/mile x miles, so the test is the dollar gap against the larger of a dollar
+    floor and a percentage of the expected fuel: carrier rounding noise scales with the size of the
+    fuel line, so the tolerance does too (same idea as the rate rule).
     """
     tol = cfg["audit"]["tolerances"]
     r = rerated["invoices"]
@@ -155,7 +157,8 @@ def fsc_mismatch(norm, rerated, ref, cfg):
     implied = (r["billed_fsc"] / r["billed_lh"].where(r["billed_lh"] > 0)) * 100
     pp_over = (implied - r["fsc_pct_expected"] * 100).round(4)
     ltl_hit = (r["mode"] == "LTL") & (pp_over > tol["fsc_ltl_pp"]) & (impact > tol["fsc_min_dollars"])
-    tl_hit = (r["mode"] == "TL") & (impact > tol["fsc_tl_abs"])
+    tl_allowed = np.maximum(tol["fsc_tl_abs"], tol["fsc_tl_pct"] * r["fsc_expected"]).round(6)
+    tl_hit = (r["mode"] == "TL") & (impact > tl_allowed)
     out = []
     for x, over in zip(r[ltl_hit | tl_hit].itertuples(index=False), pp_over[ltl_hit | tl_hit]):
         if x.mode == "LTL":
