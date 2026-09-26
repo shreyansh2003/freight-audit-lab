@@ -1,17 +1,23 @@
 """Run the pipeline end to end: python -m freight_audit_lab.run
 
 Stages 1-2: generate reference data, invoices, raw carrier files, and the answer key.
-Stage 3: normalize the raw files and match invoices to shipments. Later stages append rerate,
-audit, and so on.
+Stage 3: normalize the raw files and match invoices to shipments.
+Stage 4: re-rate against the contract, audit with the rules, run the naive baseline.
+Later stages append evaluation, accruals, and so on.
 """
 
 import time
 
-from freight_audit_lab.config import load_config
+from freight_audit_lab.audit.baseline import run_baseline, write_baseline
+from freight_audit_lab.audit.engine import audit, write_audit
+from freight_audit_lab.audit.rules import RULES
+from freight_audit_lab.config import REPO_ROOT, load_config
 from freight_audit_lab.contract import (contract_linehaul, diesel_for_ship_date, fsc_ltl_amount,
                                         fsc_tl_amount, lookup_rate)
+from freight_audit_lab.csv_io import load_reference
 from freight_audit_lab.generate import generate_all
 from freight_audit_lab.normalize import normalize, write_normalized
+from freight_audit_lab.rerate import rerate
 
 
 def contract_spend_check(tables, cfg):
@@ -50,6 +56,32 @@ def main():
         print(f"  {name:<26} {len(df):>6} rows")
     print(f"  match_method: {inv['match_method'].value_counts().to_dict()}  "
           f"totals_ok: {int(inv['totals_ok'].sum())}/{len(inv)}  superseded: {int(inv['is_superseded'].sum())}")
+
+    t0 = time.perf_counter()
+    ref = load_reference(REPO_ROOT / "data")
+    rerated = rerate(normalized, ref, cfg)
+    print(f"rerate: {time.perf_counter() - t0:.1f}s  ({len(rerated['invoices'])} invoices, "
+          f"{len(rerated['accessorials'])} accessorial lines)")
+
+    t0 = time.perf_counter()
+    engine = audit(normalized, rerated, ref, cfg)
+    baseline = run_baseline(normalized, ref, cfg)
+    write_audit(engine)
+    write_baseline(baseline)
+    print(f"audit + baseline: {time.perf_counter() - t0:.1f}s")
+    print_flag_comparison(engine, baseline)
+
+
+def print_flag_comparison(engine, baseline):
+    """Flag counts by error type, engine vs baseline, and total recoverable estimate for each."""
+    eng, base = engine["flags"], baseline["flags"]
+    print(f"  {'error type':<26}{'engine':>8}{'baseline':>10}")
+    for rule in RULES:
+        name = rule.__name__
+        print(f"  {name:<26}{(eng['error_type'] == name).sum():>8}{(base['error_type'] == name).sum():>10}")
+    print(f"  {'total flags':<26}{len(eng):>8}{len(base):>10}")
+    print(f"  recoverable estimate: engine ${engine['invoice_summary']['recoverable_estimate'].sum():,.0f}  "
+          f"baseline ${baseline['recoverable'].sum():,.0f}")
 
 
 if __name__ == "__main__":

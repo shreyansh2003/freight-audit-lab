@@ -289,3 +289,58 @@ Grouped by area. Stage 8 will tidy this into its final form.
   shipments also leave the invoice unmatched. *Change:* `normalization.fallback_match`.
 - **Unmatched invoices have a blank `shipment_id`** (NaN once read back), and `match_method` is the
   field to test.
+
+
+## Re-rating and audit (Stage 4)
+
+- **Audit scope.** Only non-superseded invoices are audited. Rebills are audited like originals
+  (rate, fuel, weight, accessorial, phantom, and duplicate checks). Balance-due invoices go through the
+  accessorial and phantom checks only: they carry no linehaul or fuel line, and they are a different
+  charge on the same shipment, not a copy of it. Unmatched invoices can only be phantom or duplicate
+  candidates, since there is no shipment to price. *Change:* not configurable (it is what the checks mean).
+- **Known limitation: one typo'd-BOL invoice is called a phantom.** Stage 3's fallback match is
+  deliberately tight (weight within `weight_pct` of the shipment weight, billed weight used), so a
+  transposed BOL on a shipment billed at a certified reweigh weight cannot fall back and stays
+  `unmatched`. The audit then flags it as a phantom and counts its whole total as recoverable, which is
+  a false positive. It happens once in the default run and is left as it is: loosening the fallback would
+  let generated phantoms match real shipments, and a real AP team would resolve it by hand.
+  *Change:* `normalization.fallback_match`.
+- **Duplicate pool** is live originals and rebills. The earliest received is kept; a later copy is a
+  duplicate if its total is within `duplicate_amount` (inclusive, compared at cent precision) of an
+  earlier copy in the group and it was received within `duplicate_window_days` (inclusive). Groups are the
+  matched shipment, or carrier + canonical BOL for unmatched invoices. A repeat of the same carrier +
+  invoice number is flagged whatever the amount. *Change:* `audit.tolerances.duplicate_*`.
+- **Prices and diesel come from the shipper's shipment record**, not the carrier's printed ship date, so a
+  fallback-matched invoice with a date a day off is still priced on the real ship date. Certificates and
+  authorizations recorded after `audit_as_of` are ignored, in line with the no-look-ahead rule.
+- **Rate rule** compares the *linehaul* gap (billed LH minus contract LH at the billed weight) with
+  `max(rate_abs, rate_pct x contract LH)`, strictly greater. The dollar estimate then adds the LTL fuel
+  knock-on, `gap x (1 + FSC%)`, so the flag threshold is a linehaul number and the estimate matches the
+  Stage 2 impact definition. *Change:* `audit.tolerances.rate_pct`, `rate_abs`.
+- **Fuel rule.** LTL: implied FSC % minus expected % greater than `fsc_ltl_pp` points *and* dollar gap
+  greater than `fsc_min_dollars`. TL: dollar gap greater than `fsc_tl_abs`. Both dollar floors are flat, so
+  they behave like a percentage tolerance on small bills and a very tight one on large bills; a wrong
+  fuel week worth less than the floor is missed by design, and carrier rounding noise on a large TL fuel
+  line can exceed the flat TL floor. Expected FSC is computed on the *billed* linehaul so a rate error is
+  never counted a second time. *Change:* `audit.tolerances.fsc_*`.
+- **Weight rule** flags when billed weight exceeds the reference weight by more than `weight_pct`
+  (LTL only). It has no dollar floor, so a flag can be worth little when the min charge applies.
+  *Change:* `audit.tolerances.weight_pct`.
+- **Accessorials are checked for presence only**: an authorization for that shipment and code recorded on
+  or before `audit_as_of`. The authorized amount is not compared with the billed amount.
+- **Only overbilling is flagged.** A negative rate or fuel gap (an undercharge) is never a flag.
+- **Recoverable estimate.** Each flag has a `dollar_impact_estimate`. For a duplicate or phantom invoice the
+  whole invoice total is recoverable and only that flag counts (`counted_in_recoverable` is false for other
+  flags on the same invoice, kept for information). For any other invoice the counted impacts are summed
+  and capped at the invoice total. Every dollar figure here is an estimate.
+- **Process metric.** Accessorials authorized after the invoice date but before `audit_as_of` are counted in
+  `outputs/audit_process_metrics.csv`, not flagged.
+- **Baseline** (`audit/baseline.py`) runs the *same rule functions and tolerances* on deliberately naive
+  inputs: exact raw-BOL text match (carrier + BOL string), no supersession (every invoice is audited), any
+  shared BOL text is a duplicate, the first rate row per carrier-lane at the shipment weight, no reweigh
+  certificates, and authorization asked as of the invoice date. It also runs the fuel check, which the
+  spec does not list, so it is not handicapped by a missing check. Two consequences to keep in mind:
+  format D carriers print a `BOL#` prefix on every invoice, so an exact-text match fails for almost all of
+  them and they are called phantoms (which also stops the baseline checking them for anything else); and
+  because it never separates weight from rate, a weight-inflated invoice can trip both checks and baseline
+  dollars can overlap. Baseline recoverable dollars use the engine's counting rule.

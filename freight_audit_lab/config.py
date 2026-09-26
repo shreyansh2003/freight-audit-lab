@@ -50,6 +50,10 @@ REQUIRED_KEYS = [
     "traps.rebill_original_overstate", "traps.unknown_charge_lines",
     "traps.unknown_charge_description",
     "normalization.charge_code_map", "normalization.fallback_match", "normalization.totals_tolerance",
+    # Stage 4
+    "audit.tolerances.duplicate_amount", "audit.tolerances.duplicate_window_days",
+    "audit.tolerances.rate_pct", "audit.tolerances.rate_abs", "audit.tolerances.fsc_ltl_pp",
+    "audit.tolerances.fsc_min_dollars", "audit.tolerances.fsc_tl_abs", "audit.tolerances.weight_pct",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",
