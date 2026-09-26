@@ -168,8 +168,8 @@ Grouped by area. Stage 8 will tidy this into its final form.
   invoices qualify for `stale_rate` (about 4 in the default run). *Change:* `errors`.
 - **Zero-impact rule = re-draw, then skip.** A magnitude is re-drawn up to `errors.max_redraws`
   times until impact > $0.01, then the error is skipped. This also skips wrong-week draws whose
-  later diesel price is *lower* (a negative "overcharge"), so the observed FSC rate is a bit under
-  config and systemic wrong-week errors fade in the falling-price months.
+  later diesel price is *lower* (a negative "overcharge"), so the observed random wrong-week rate
+  is a bit under config in the falling-price months.
 - **Several errors on one invoice** are applied in the order weight -> rate -> FSC -> accessorial,
   each building on the last; impacts are additive and follow the Stage 4 decomposition
   (weight, then rate on the billed-weight linehaul, then FSC on the billed linehaul).
@@ -177,8 +177,20 @@ Grouped by area. Stage 8 will tidy this into its final form.
   (tolerance 0.25); TL adds $0.25-$1.75 (tolerance $2.00). *Change:* `errors.magnitudes`.
 - **TL `wrong_step`** inflates the diesel price by 5-15%, since TL has no step table.
   *Change:* `errors.magnitudes.fsc_tl_price_inflation`.
-- **Systemic issues** override the probability of that one mode for that carrier while the
-  *ship date* is inside the window (inclusive); other modes keep their base rates.
+- **Systemic issues** take precedence over the base draw: while the *ship date* is inside the
+  window (inclusive), an invoice for that carrier and error type gets the systemic mode with
+  probability `rate`, and `rate: 1.0` means every invoice does (no base-rate draw can dilute
+  it). Invoices outside the window, and the `1 - rate` remainder, use the base rates.
+  *Change:* `errors.systemic_issues`.
+- **CARF `wrong_table` (the one systemic issue).** From 2025-08-01 to 2025-10-31 CARF (TL) bills
+  its fuel surcharge at 5.5 mpg instead of the contract's 6.0, on every original invoice shipped
+  in the window: FSC $ = max(0, diesel − peg) / 5.5 × miles, so it is overbilled by a constant
+  ~9% of the FSC line. `wrong_table` is a TL-only mode (LTL FSC is a step table, not an mpg), and
+  the generator raises if it is configured for an LTL carrier. Exempt by construction: superseded
+  originals (errors are never injected there), rebills (they carry true contract charges),
+  balance-due invoices (no FSC line), and phantoms. The random `wrong_week` errors are unchanged
+  and still occur for every carrier at base rate. *Change:* `errors.magnitudes.fsc_tl_wrong_table_mpg`
+  (5.5) and the `systemic_issues` entry.
 - **Duplicates come only from originals with no other injected error**, and each duplicate is a
   copy of the original's billed lines, so its label is just `duplicate_invoice` (Stage 4 tests
   the "duplicate that also has a rate error" case on hand-built fixtures). A resend keeps the
@@ -217,7 +229,10 @@ Grouped by area. Stage 8 will tidy this into its final form.
   suffix `R`/`B`; D `04-Mar-25` dates, `BOL#` prefix, uppercase-and-punctuation-inconsistent cities
   (always recoverable by lowercasing and dropping punctuation), explicit type in caps
   (`ORIGINAL`/`REBILL`/`BAL DUE`) and an `Orig Invoice Ref` column for rebills. Every layout has an
-  invoice date; none has the received date, which lives only in `ap_receipt_log.csv`. Long
-  layouts (B, D) have no stated total column, so the totals check applies to A and C only.
+  invoice date; none has the received date, which lives only in `ap_receipt_log.csv`. Wide layouts
+  (A, C) state the total once per invoice; long layouts (B `invoice_total`, D `Invoice Total`)
+  repeat it on every charge line, as long exports usually do, so the Stage 3 totals check covers
+  all four layouts. The stated total is the sum of the rendered lines (including the $0.00
+  unmapped line), so on generated data it always ties out; the check exists for real-file damage.
   Files are named by the month the invoice was **received**, and a re-run deletes `data/raw/`
   and `data/ground_truth/` first so stale files never linger.

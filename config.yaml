@@ -109,8 +109,9 @@ errors:                    # share of eligible original invoices (phantom: share
     fsc_tl_price_inflation: [0.05, 0.15]     # TL wrong_step: diesel price inflated by this fraction
     fsc_sub_tolerance_pp: [0.05, 0.20]       # LTL: extra FSC percentage points (below fsc_ltl_pp)
     fsc_sub_tolerance_tl_dollars: [0.25, 1.75]  # TL: extra FSC dollars (below fsc_tl_abs)
+    fsc_tl_wrong_table_mpg: 5.5              # TL wrong_table: carrier bills fuel at this mpg, not fsc.tl.mpg
   systemic_issues:
-    - {carrier: CARF, error_type: fsc_mismatch, mode: wrong_week, start: 2025-08-01, end: 2025-10-31, rate: 0.5}
+    - {carrier: CARF, error_type: fsc_mismatch, mode: wrong_table, start: 2025-08-01, end: 2025-10-31, rate: 1.0}
 
 traps:
   rebill_share: 0.01

@@ -17,12 +17,12 @@ HEADERS = {
           "Acc2 Amt", "Total"],
     "B": ["invoice_number", "pro_number", "bill_of_lading", "doc_id", "invoice_date", "ship_date",
           "origin_city", "dest_city", "weight_cwt", "charge_code", "amount", "invoice_type",
-          "supersedes"],
+          "supersedes", "invoice_total"],
     "C": ["Carrier", "Invoice #", "PRO Number", "BOL Number", "Transmission ID", "Invoice Date",
           "Ship Date", "Origin", "Destination", "Weight", "Linehaul", "FSC", "Acc 1", "Acc 1 Amount",
           "Acc 2", "Acc 2 Amount", "Total Due"],
     "D": ["Inv Number", "Pro Number", "BOL", "Control No", "Inv Date", "Ship Date", "Orig", "Dest",
-          "Weight Lbs", "Charge Description", "Amount", "Type", "Orig Invoice Ref"],
+          "Weight Lbs", "Charge Description", "Amount", "Type", "Orig Invoice Ref", "Invoice Total"],
 }
 MAX_ACCESSORIAL_SLOTS = 2
 PRO_SUFFIX = {"A": {"rebill": "-C", "balance_due": "-BD"}, "C": {"rebill": "R", "balance_due": "B"}}
@@ -85,17 +85,23 @@ def wide_row(inv, fmt, carrier, rng):
 
 
 def long_rows(inv, fmt, describe, number_of, rng):
-    """One row per charge line (formats B and D)."""
+    """One row per charge line (formats B and D).
+
+    Long exports usually repeat the invoice-level total on every line, so this does too.
+    """
     supersedes = number_of[inv["parent_uid"]] if inv["invoice_type"] == "rebill" else ""
     origin = city_text(inv["origin_city"], inv["origin_state"], fmt, rng)
     dest = city_text(inv["dest_city"], inv["dest_state"], fmt, rng)
+    lines = inv["lines"] + inv["unknown_lines"]
+    invoice_total = amount_text(round(sum(a for _, a in lines), 2), fmt)
     rows = []
-    for code, amount in inv["lines"] + inv["unknown_lines"]:
+    for code, amount in lines:
         common = [inv["invoice_number"], inv["pro_base"], bol_text(inv, fmt), inv["control_id"],
                   date_text(inv["invoice_date"], fmt), date_text(inv["ship_date"], fmt),
                   origin, dest, weight_text(inv["weight_lbs"], fmt)]
         label = describe(code)
-        values = common + [label, amount_text(amount, fmt), TYPE_TEXT[fmt][inv["invoice_type"]], supersedes]
+        values = common + [label, amount_text(amount, fmt), TYPE_TEXT[fmt][inv["invoice_type"]],
+                           supersedes, invoice_total]
         rows.append(dict(zip(HEADERS[fmt], values)))
     return rows
 

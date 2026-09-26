@@ -31,8 +31,8 @@ MIN_IMPACT = 0.01   # an error must be worth more than this to be labeled
 def systemic_overrides(cfg, carrier_id, error_type, ship_date):
     """{mode: rate} for systemic issues covering this carrier, error type, and ship date.
 
-    A systemic issue is a carrier having a bad stretch: inside its window the rate for that
-    error type and mode is replaced by `rate`. The dispute summary should later spot it.
+    A systemic issue is a carrier having a bad stretch: inside its window that mode hits
+    `rate` of the invoices. The dispute summary should later spot it.
     """
     return {s["mode"]: s["rate"] for s in cfg["errors"]["systemic_issues"]
             if s["carrier"] == carrier_id and s["error_type"] == error_type
@@ -56,14 +56,21 @@ def pick_mode(probs, u_hit, u_mode):
     return mode
 
 
-def error_probs(cfg, error_type, carrier_id, shares, ship_date):
-    """{mode: probability} for one invoice: config rate x carrier multiplier x mode share,
-    with any systemic issue replacing that mode's probability."""
+def choose_mode(cfg, error_type, carrier_id, shares, ship_date, u_hit, u_mode, u_sys):
+    """The error mode for one invoice, or None.
+
+    A systemic issue takes precedence: inside its window `u_sys` decides whether the invoice
+    gets that mode (rate 1.0 means every invoice does, so no base-rate draw can dilute it).
+    Otherwise the base draw applies: config rate x carrier multiplier x mode share.
+    """
+    x = u_sys
+    for mode, rate in systemic_overrides(cfg, carrier_id, error_type, ship_date).items():
+        if x < rate:
+            return mode
+        x -= rate
     mult = next(c["error_multiplier"] for c in cfg["carriers"] if c["id"] == carrier_id)
     base = cfg["errors"][error_type] * mult
-    probs = {mode: base * share for mode, share in shares.items()}
-    probs.update(systemic_overrides(cfg, carrier_id, error_type, ship_date))
-    return probs
+    return pick_mode({mode: base * share for mode, share in shares.items()}, u_hit, u_mode)
 
 
 # ------------------------------------------------------------ one draw per error type
@@ -107,6 +114,10 @@ def draw_fsc(c, mode, billed_lh, expected_fsc, tables, cfg, rng):
             price = diesel_for_ship_date(tables["diesel_weekly"], shp.ship_date + pd.Timedelta(weeks=k))
             billed = (fsc_ltl_amount(billed_lh, price, cfg) if is_ltl
                       else fsc_tl_amount(shp.miles, price, cfg))
+        elif mode == "wrong_table":             # TL: the carrier's table assumes a different mpg
+            if is_ltl:
+                raise ValueError("fsc wrong_table is a TL mode (it changes the mpg); LTL uses a step table")
+            billed = fsc_tl_amount(shp.miles, c["diesel"], cfg, mpg=mag["fsc_tl_wrong_table_mpg"])
         elif mode == "wrong_step" and is_ltl:   # extra steps on the carrier's FSC table
             k = int(rng.integers(mag["fsc_wrong_steps"][0], mag["fsc_wrong_steps"][1] + 1))
             billed = cents(billed_lh * (c["pct"] + k * cfg["fsc"]["ltl"]["pct_per_step"]))
@@ -145,7 +156,7 @@ def inject_errors(invoices, ctx, tables, cfg, rng):
     n = len(invoices)
     s = cfg["errors"]["sub_tolerance_share"]
     u = {name: rng.random(n) for name in ("w_hit", "w_mode", "r_hit", "r_mode", "f_hit", "f_mode",
-                                         "a_hit", "a_pick")}
+                                         "a_hit", "a_pick", "sys")}
     amend_date = pd.Timestamp(cfg["rates"]["amendments"]["effective_date"])
     for i, inv in enumerate(invoices):
         if inv["superseded"]:
@@ -158,9 +169,9 @@ def inject_errors(invoices, ctx, tables, cfg, rng):
 
         # weight overbilling: LTL only, and only where no reweigh certificate justifies the weight
         if is_ltl and not c["has_cert"]:
-            probs = error_probs(cfg, "weight_overbilling", shp.carrier_id,
-                                {"inflation": 1 - s, "sub_tolerance": s}, shp.ship_date)
-            mode = pick_mode(probs, u["w_hit"][i], u["w_mode"][i])
+            mode = choose_mode(cfg, "weight_overbilling", shp.carrier_id,
+                               {"inflation": 1 - s, "sub_tolerance": s}, shp.ship_date,
+                               u["w_hit"][i], u["w_mode"][i], u["sys"][i])
             drawn = draw_weight(c, mode, cfg, rng) if mode else None
             if drawn:
                 c["billed_weight"], lh_at_weight, impact = drawn
@@ -174,10 +185,10 @@ def inject_errors(invoices, ctx, tables, cfg, rng):
                                        amend_date - pd.Timedelta(days=1))
             lowered = contract_linehaul(c["old_row"], c["billed_weight"], shp.miles) > lh_at_weight
         stale = cfg["errors"]["stale_rate_share"] if lowered else 0.0
-        probs = error_probs(cfg, "rate_overcharge", shp.carrier_id,
-                            {"sub_tolerance": s, "stale_rate": (1 - s) * stale,
-                             "markup": (1 - s) * (1 - stale)}, shp.ship_date)
-        mode = pick_mode(probs, u["r_hit"][i], u["r_mode"][i])
+        mode = choose_mode(cfg, "rate_overcharge", shp.carrier_id,
+                           {"sub_tolerance": s, "stale_rate": (1 - s) * stale,
+                            "markup": (1 - s) * (1 - stale)}, shp.ship_date,
+                           u["r_hit"][i], u["r_mode"][i], u["sys"][i])
         drawn = draw_rate(c, mode, lh_at_weight, cfg, rng) if mode else None
         if drawn:
             billed_lh, impact = drawn
@@ -188,11 +199,10 @@ def inject_errors(invoices, ctx, tables, cfg, rng):
         # fuel surcharge: the carrier applies its FSC to whatever linehaul it billed
         expected_fsc = (fsc_ltl_amount(billed_lh, c["diesel"], cfg) if is_ltl
                         else fsc_tl_amount(shp.miles, c["diesel"], cfg))
-        probs = error_probs(cfg, "fsc_mismatch", shp.carrier_id,
-                            {"sub_tolerance": s, "wrong_week": (1 - s) * cfg["errors"]["fsc_wrong_week_share"],
-                             "wrong_step": (1 - s) * (1 - cfg["errors"]["fsc_wrong_week_share"])},
-                            shp.ship_date)
-        mode = pick_mode(probs, u["f_hit"][i], u["f_mode"][i])
+        mode = choose_mode(cfg, "fsc_mismatch", shp.carrier_id,
+                           {"sub_tolerance": s, "wrong_week": (1 - s) * cfg["errors"]["fsc_wrong_week_share"],
+                            "wrong_step": (1 - s) * (1 - cfg["errors"]["fsc_wrong_week_share"])},
+                           shp.ship_date, u["f_hit"][i], u["f_mode"][i], u["sys"][i])
         drawn = draw_fsc(c, mode, billed_lh, expected_fsc, tables, cfg, rng) if mode else None
         billed_fsc = expected_fsc
         if drawn:

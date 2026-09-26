@@ -132,16 +132,18 @@ def fsc_ltl_amount(linehaul, diesel_price, cfg):
     return cents(linehaul * fsc_ltl_pct(diesel_price, cfg))
 
 
-def fsc_tl_per_mile(diesel_price, cfg):
+def fsc_tl_per_mile(diesel_price, cfg, mpg=None):
     """TL fuel surcharge in $/mile: the fuel cost above the peg price, per mile driven.
 
     A truck gets about `mpg` miles per gallon, so each mile burns 1/mpg gallons, and the
     shipper reimburses the part of the diesel price above the peg built into the base rate.
+    `mpg` defaults to the contract's; only the generator passes another value, to bill a
+    carrier's wrong fuel table.
     """
     f = cfg["fsc"]["tl"]
-    return max(0.0, (diesel_price - f["peg_price"]) / f["mpg"])
+    return max(0.0, (diesel_price - f["peg_price"]) / (f["mpg"] if mpg is None else mpg))
 
 
-def fsc_tl_amount(miles, diesel_price, cfg):
+def fsc_tl_amount(miles, diesel_price, cfg, mpg=None):
     """TL fuel surcharge in dollars: $/mile x lane miles."""
-    return cents(fsc_tl_per_mile(diesel_price, cfg) * miles)
+    return cents(fsc_tl_per_mile(diesel_price, cfg, mpg) * miles)

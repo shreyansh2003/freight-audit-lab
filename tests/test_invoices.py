@@ -93,19 +93,34 @@ def test_observed_injection_rate_is_near_config(full, cfg, error_type, low, high
     assert low * expected <= observed <= high * expected, (observed, expected)
 
 
-def test_systemic_issue_concentrates_fsc_errors_in_its_window(full, cfg):
+def test_systemic_wrong_table_hits_every_carf_original_in_its_window(full, cfg):
+    """CARF bills fuel at 5.5 mpg instead of 6.0 on every original shipped Aug 1 - Oct 31, 2025."""
     tables, _ = full
     s = cfg["errors"]["systemic_issues"][0]
-    inv = tables["invoices"]
-    hit = tables["labels"].query("label == 'fsc_mismatch' and mode == 'wrong_week'")
-    hit = hit.merge(inv[["invoice_id", "carrier_id", "ship_date"]], on="invoice_id")
-    hit = hit[hit["carrier_id"] == s["carrier"]]
-    in_window = hit["ship_date"].between(pd.Timestamp(s["start"]), pd.Timestamp(s["end"]))
-    window = inv[(inv["carrier_id"] == s["carrier"])
-                 & inv["ship_date"].between(pd.Timestamp(s["start"]), pd.Timestamp(s["end"]))]
-    outside = inv[(inv["carrier_id"] == s["carrier"]) & ~inv.index.isin(window.index)]
-    rate_in, rate_out = in_window.sum() / len(window), (~in_window).sum() / len(outside)
-    assert rate_in > 5 * rate_out and rate_in > 0.1
+    assert (s["carrier"], s["mode"], s["rate"]) == ("CARF", "wrong_table", 1.0)
+    assert cfg["errors"]["magnitudes"]["fsc_tl_wrong_table_mpg"] == 5.5 and cfg["fsc"]["tl"]["mpg"] == 6.0
+    inv, lines = tables["invoices"], tables["invoice_lines"]
+    window = inv["ship_date"].between(pd.Timestamp(s["start"]), pd.Timestamp(s["end"]))
+    mine = inv[(inv["carrier_id"] == s["carrier"]) & window & (inv["invoice_type"] == "original")
+               & inv["shipment_id"].ne("") & ~inv["superseded"]]      # a rebill carries contract charges
+    hit = set(tables["labels"].query("label == 'fsc_mismatch' and mode == 'wrong_table'")["invoice_id"])
+    assert len(mine) > 100 and set(mine["invoice_id"]) <= hit
+    outside = inv[(inv["carrier_id"] == s["carrier"]) & ~window]
+    assert not hit & set(outside["invoice_id"])                        # nothing leaks outside the window
+    # the billed FSC is the 5.5-mpg amount (skipping rounding noise, which moves FSC by design)
+    noisy = set(tables["labels"].query("label == 'rounding_noise'")["invoice_id"])
+    fsc = lines[lines["charge_code"] == "FSC"].set_index("invoice_id")["amount"]
+    shp = tables["shipments"].set_index("shipment_id")
+    for row in mine[~mine["invoice_id"].isin(noisy)].itertuples():
+        diesel = diesel_for_ship_date(tables["diesel_weekly"], row.ship_date)
+        want = fsc_tl_amount(shp.loc[row.shipment_id, "miles"], diesel, cfg,
+                             mpg=cfg["errors"]["magnitudes"]["fsc_tl_wrong_table_mpg"])
+        assert fsc[row.invoice_id] == pytest.approx(want, abs=CENT), row.invoice_id
+
+
+def test_random_wrong_week_errors_still_occur(full):
+    labels = full[0]["labels"].query("label == 'fsc_mismatch'")
+    assert (labels["mode"] == "wrong_week").sum() > 10
 
 
 class TrueTotals:

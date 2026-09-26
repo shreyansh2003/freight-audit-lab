@@ -84,6 +84,21 @@ def test_raw_amounts_are_lossless(full, raw):
         assert (got.to_numpy() == pytest.approx(want.to_numpy(), abs=0.005))
 
 
+def test_long_layouts_repeat_the_invoice_total_on_every_line(full, raw):
+    """Formats B and D carry a stated total, so the Stage 3 totals check covers all four layouts."""
+    tables, _ = full
+    frames, fmt = raw
+    totals = tables["invoices"].set_index(["carrier_id", "control_id"])["total"]
+    for cid, df in frames.items():
+        if fmt[cid] not in ("B", "D"):
+            continue
+        f = fmt[cid]
+        stated = df.groupby(CONTROL_COL[f])["Invoice Total" if f == "D" else "invoice_total"]
+        assert (stated.nunique() == 1).all()                            # same value on every line
+        got = stated.first().astype(float)
+        assert (got.to_numpy() == pytest.approx(totals.loc[cid].loc[got.index].to_numpy(), abs=0.005))
+
+
 def test_ids_survive_as_text_with_leading_zeros(raw):
     frames, fmt = raw
     for cid, df in frames.items():
