@@ -30,3 +30,9 @@ def test_the_controls_work():
     at.selectbox[0].select_index(2).run()          # the dispute pack for the third carrier
     at.selectbox[1].select_index(0).run()          # the first month-end's journal entries
     assert not at.exception, [e.value for e in at.exception]
+
+
+def test_the_dispute_viewer_opens_on_the_strongest_systemic_carrier_and_the_page_has_its_byline():
+    at = run_app()
+    assert at.selectbox[0].value.startswith("CARF")
+    assert any("built by Shrey" in m.value and "Code on GitHub" in m.value for m in at.markdown)

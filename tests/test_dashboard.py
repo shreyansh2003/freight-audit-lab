@@ -7,9 +7,9 @@ functions on the real outputs/ to make sure they still fit the files the pipelin
 import pandas as pd
 import pytest
 
-from freight_audit_lab.dashboard import (accrual_finding_text, key_findings, load_outputs, md_escape, outputs_ready,
+from freight_audit_lab.dashboard import (accrual_finding_text, demote_headings, key_findings, load_outputs, md_escape, outputs_ready,
                                          overview_metrics, pct, recoverable_by_carrier, recoverable_by_error_type,
-                                         systemic_finding_text, trap_finding_text, usd)
+                                         strongest_systemic_carrier, systemic_finding_text, trap_finding_text, usd)
 
 NAMES = {"CARA": "Carrier A Freight", "CARF": "Carrier F Trucking"}
 
@@ -84,6 +84,16 @@ def test_accrual_bullet_shares_are_of_the_net_error(small):
     text = accrual_finding_text(small)
     assert "0.10% below eventual payable" in text and "mean absolute monthly error 2.00%" in text
     assert "5.0% of the accrual but 60% of the net shortfall" in text and "explain 40% of the net shortfall" in text
+
+
+def test_dispute_viewer_opens_on_the_carrier_with_the_smallest_p_value(small):
+    assert strongest_systemic_carrier(small) == "CARF"                     # p 1e-320 beats 1.6e-05, though CARA is listed first
+    assert strongest_systemic_carrier(dict(small, systemic_findings=small["systemic_findings"].iloc[0:0])) is None
+
+
+def test_demote_headings_keeps_the_text_and_leaves_other_hashes_alone():
+    md = "# Dispute summary: Carrier F (CARF)\n\nPeriod: x.\n\n## By error type\n\n1. **0600346** (BOL#123)"
+    assert demote_headings(md) == "**Dispute summary: Carrier F (CARF)**\n\nPeriod: x.\n\n**By error type**\n\n1. **0600346** (BOL#123)"
 
 
 def test_formatting_helpers():

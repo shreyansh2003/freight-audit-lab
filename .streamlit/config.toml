@@ -7,3 +7,6 @@ textColor = "#1F2328"
 
 [browser]
 gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

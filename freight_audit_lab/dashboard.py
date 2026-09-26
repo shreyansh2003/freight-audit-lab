@@ -7,6 +7,8 @@ this module reads the answer key: precision, recall and false positives come fro
 which `evaluate.py` wrote.
 """
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -55,6 +57,17 @@ def pct(x, digits=1):
 def md_escape(text):
     """Escape `$` so Streamlit does not read a pair of dollar amounts as a LaTeX formula."""
     return text.replace("$", r"\$")
+
+
+def demote_headings(markdown):
+    """Turn every `# heading` line into a bold line, so an embedded document does not out-shout the page."""
+    return re.sub(r"^#{1,6}\s+(.*)$", r"**\1**", markdown, flags=re.MULTILINE)
+
+
+def strongest_systemic_carrier(o):
+    """Carrier id of the systemic finding with the smallest p-value (the one the dispute viewer opens on), or None."""
+    found = o["systemic_findings"].sort_values("p_value")
+    return None if found.empty else str(found.iloc[0]["carrier_id"])
 
 
 def error_label(error_type):

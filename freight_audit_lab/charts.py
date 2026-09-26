@@ -14,10 +14,15 @@ FONT = "sans-serif"
 SERIES = alt.Scale(domain=["Engine", "Baseline"], range=[ACCENT, GREY])
 
 
-def styled(chart, title, height):
-    """Shared look: left-aligned title, no view border, no gridlines, readable label sizes."""
+LABEL_ROOM = 64      # pixels of padding right of a bar chart, so the value label on the longest bar is not clipped
+
+
+def styled(chart, title, height, pad_right=5):
+    """Shared look: left-aligned title, no view border, no gridlines, readable label sizes.
+    `pad_right` is empty space right of the plot; bar charts use it to fit the value printed after each bar."""
     return (chart.properties(title=alt.TitleParams(title, anchor="start", fontSize=14, fontWeight=600, color=INK,
-                                                   offset=10), height=height)
+                                                   offset=10), height=height,
+                             padding={"left": 5, "top": 5, "right": pad_right, "bottom": 5})
             .configure_view(stroke=None)
             .configure_axis(grid=False, domainColor=LIGHT, tickColor=LIGHT, labelColor=MUTED, labelFontSize=12,
                             titleColor=MUTED, titleFontSize=12, titleFontWeight="normal", labelFont=FONT, titleFont=FONT)
@@ -33,7 +38,7 @@ def bar_by_category(df, category, value, title, fmt="$,.0f", height=None):
     bars = base.mark_bar(color=ACCENT, cornerRadiusEnd=3, size=16).encode(
         tooltip=[alt.Tooltip(f"{category}:N", title=None), alt.Tooltip(f"{value}:Q", format=fmt, title="Estimate")])
     labels = base.mark_text(align="left", dx=5, color=INK, fontSize=12).encode(text=alt.Text(f"{value}:Q", format=fmt))
-    return styled(bars + labels, title, height or 30 * len(df) + 10)
+    return styled(bars + labels, title, height or 30 * len(df) + 10, pad_right=LABEL_ROOM)
 
 
 def engine_vs_baseline_bars(df, category, title, fmt, height=None):
@@ -47,7 +52,7 @@ def engine_vs_baseline_bars(df, category, title, fmt, height=None):
     bars = base.mark_bar(cornerRadiusEnd=3).encode(tooltip=[alt.Tooltip(f"{category}:N", title=None), "system:N",
                                                             alt.Tooltip("value:Q", format=fmt, title=None)])
     labels = base.mark_text(align="left", dx=4, fontSize=11, color=INK).encode(text=alt.Text("value:Q", format=fmt))
-    return styled(bars + labels, title, height or 26 * df[category].nunique() * 2 + 20)
+    return styled(bars + labels, title, height or 26 * df[category].nunique() * 2 + 20, pad_right=LABEL_ROOM)
 
 
 def sweep_chart(df, x_title, floor, title):

@@ -15,16 +15,19 @@ from freight_audit_lab import charts
 from freight_audit_lab.audit.engine import OUTPUT_DIR
 from freight_audit_lab.config import REPO_ROOT, get, load_config
 from freight_audit_lab.csv_io import read_csv
-from freight_audit_lab.dashboard import (error_label, key_findings, load_outputs, md_escape, outputs_ready,
-                                         overview_metrics, pct, recoverable_by_carrier, recoverable_by_error_type, usd)
+from freight_audit_lab.dashboard import (demote_headings, error_label, key_findings, load_outputs, md_escape, outputs_ready,
+                                         overview_metrics, pct, recoverable_by_carrier, recoverable_by_error_type,
+                                         strongest_systemic_carrier, usd)
 
 st.set_page_config(page_title="Freight audit lab", page_icon=None, layout="wide")
 
 CSS = f"""
 <style>
-.block-container {{ max-width: 1180px; padding-top: 2.2rem; }}
+.block-container {{ max-width: 1500px; padding: 2.2rem 2.5rem 3rem 2.5rem; }}
 h1 {{ font-size: 1.7rem !important; font-weight: 650 !important; letter-spacing: -0.01em; }}
 h3 {{ font-size: 1.05rem !important; font-weight: 600 !important; }}
+.byline {{ color: {charts.MUTED}; font-size: 0.95rem; margin: -6px 0 10px 0; }}
+.byline a {{ color: {charts.ACCENT}; margin-left: 10px; }}
 .banner {{ border-left: 3px solid {charts.ACCENT}; background: #F6F8FA; padding: 8px 14px; margin: 4px 0 18px 0;
           color: {charts.INK}; font-size: 0.92rem; }}
 .kpi {{ border: 1px solid #E3E7EB; border-radius: 8px; padding: 14px 16px; min-height: 140px; }}
@@ -44,6 +47,8 @@ TOLERANCES = {"rate_pct": ("Rate overcharge check", "Tolerance: billed linehaul 
               "fsc_tl_pct": ("Fuel surcharge check, TL carriers", "Tolerance: share of expected fuel dollars"),
               "weight_pct": ("Weight check", "Tolerance: billed weight above shipment weight")}
 
+
+GITHUB_URL = "#"        # placeholder: replace with the repository link before publishing
 
 # ---------------------------------------------------------------- loading
 
@@ -81,6 +86,11 @@ def tile(label, value, sub, accent=False):
 
 def show(chart):
     st.altair_chart(chart, width="stretch")
+
+
+def blank_zero(amount):
+    """A journal amount as text ($1,234.56), or an empty cell when the line has none on that side."""
+    return usd(amount, cents=True) if amount else ""
 
 
 def month_label(month_end):
@@ -165,7 +175,9 @@ def audit_quality_tab(o):
                           baseline_fp_by_type=traps["baseline_fp_by_type"].fillna(""))
     detail.columns = ["Trap", "Invoices with trap", "Engine false flags", "Engine flags by rule", "Baseline false flags",
                       "Baseline flags by rule"]
-    st.dataframe(detail, hide_index=True, width="stretch")
+    st.dataframe(detail, hide_index=True, width="stretch", column_config={
+        "Engine flags by rule": st.column_config.TextColumn(width="medium"),
+        "Baseline flags by rule": st.column_config.TextColumn(width="large")})
     st.caption("A false flag is an (invoice, error type) flag with no matching injected error. Traps overlap, so the "
                "columns are not additive. The last row is clean invoices, where neither system raises a false flag.")
 
@@ -196,7 +208,7 @@ def exception_tab(o, names):
     if picked:
         view = view[view["error_type"].map(lambda cell: bool(set(cell.split(";")) & set(picked)))]
     st.caption(f"{len(view):,} invoices, {usd(view['recoverable_estimate'].sum())} recoverable estimate. "
-               "Click a column header to sort.")
+               "Click a column header to sort; scroll right for the reason (the CSV has it in full).")
     shown = view[["rank", "carrier_id", "invoice_number", "error_type", "recoverable_estimate", "dollar_impact_estimate",
                   "received_date", "days_open", "reason"]].assign(
         error_type=view["error_type"].map(lambda cell: ", ".join(error_label(t) for t in cell.split(";"))))
@@ -206,16 +218,18 @@ def exception_tab(o, names):
         "Recoverable (estimate)": st.column_config.NumberColumn(format="dollar"),
         "Flagged (estimate)": st.column_config.NumberColumn(format="dollar"),
         "Received": st.column_config.DateColumn(format="YYYY-MM-DD"),
-        "Reason": st.column_config.TextColumn(width="large")})
+        "Reason": st.column_config.TextColumn(width=1000)})          # about 140 characters; scroll right for it
     st.download_button("Download these rows as CSV", view.to_csv(index=False), "exception_queue_filtered.csv", "text/csv")
 
     st.markdown("### Dispute summary")
     by_label = {f"{c}: {name}": c for c, name in names.items()}
-    carrier = by_label[st.selectbox("Carrier dispute pack", list(by_label))]
+    first = strongest_systemic_carrier(o)          # open on the carrier with the strongest systemic finding
+    carrier = by_label[st.selectbox("Carrier dispute pack", list(by_label),
+                                    index=list(by_label.values()).index(first) if first in by_label.values() else 0)]
     md_path = OUTPUT_DIR / "disputes" / f"{carrier}.md"
     text = md_path.read_text()
     with st.container(border=True):
-        st.markdown(md_escape(text.replace("\n## ", "\n#### ").replace("# Dispute", "#### Dispute", 1)))
+        st.markdown(md_escape(demote_headings(text)))
     d1, d2, _ = st.columns([1, 1, 3])
     d1.download_button("Download summary (.md)", text, f"{carrier}.md", "text/markdown")
     d2.download_button("Download invoices (.csv)", (OUTPUT_DIR / "disputes" / f"{carrier}.csv").read_text(),
@@ -231,14 +245,14 @@ def accruals_tab(o):
     monthly["month"] = monthly["month_end"].map(month_label)
 
     bars = pd.concat([monthly[["month", "accrual_estimate"]].rename(columns={"accrual_estimate": "value"}).assign(
-        series="Accrued at month-end (estimate)"), monthly[["month", "actual_payable_estimate"]].rename(
-        columns={"actual_payable_estimate": "value"}).assign(series="Eventual payable (estimate)")])
+        series="Accrued"), monthly[["month", "actual_payable_estimate"]].rename(
+        columns={"actual_payable_estimate": "value"}).assign(series="Payable")])
     show(charts.month_bars(bars, "Accrued vs eventual payable by month-end (USD, estimate)"))
 
     lines = pd.concat([
         pd.DataFrame({"month": monthly["month"], "error_pct": monthly["error_pct_estimate"], "series": "As built"}),
         pd.DataFrame({"month": monthly["month"], "error_pct": sens_monthly["error_pct_estimate_auth_at_delivery"].to_numpy(),
-                      "series": "If every authorization were recorded at delivery"})])
+                      "series": "Authorized at delivery"})])
     show(charts.error_lines(lines, "Accrual error, % of eventual payable (estimate; below zero = under-accrued)"))
     split = pd.DataFrame({
         "Component": ["Linehaul + fuel", "Accessorials", "Total"],
@@ -261,10 +275,10 @@ def accruals_tab(o):
     je = o["journal_entries"]
     stamp = f"{pd.Timestamp(chosen):%Y%m}"
     entry = je[je["je_id"].isin([f"ACR-{stamp}", f"REV-{stamp}"])]
-    st.dataframe(entry, hide_index=True, width="stretch", column_config={
-        "debit": st.column_config.NumberColumn("Debit", format="dollar"),
-        "credit": st.column_config.NumberColumn("Credit", format="dollar"),
-        "memo": st.column_config.TextColumn("Memo", width="large")})
+    shown = entry.assign(type=entry["type"].str.capitalize(), cost_center=entry["cost_center"].fillna(""),
+                         debit=entry["debit"].map(blank_zero), credit=entry["credit"].map(blank_zero))       # text: a null number shows as "None"
+    shown.columns = ["Entry", "Date", "Type", "Account", "Cost center", "Debit", "Credit", "Memo"]
+    st.dataframe(shown, hide_index=True, width="stretch", column_config={"Memo": st.column_config.TextColumn(width="large")})
     st.caption("The accrual is reversed in full on day 1 of the next month; posting the real invoices then produces the true-up.")
 
 
@@ -305,6 +319,8 @@ def data_tab(cfg):
 def main():
     st.markdown(CSS, unsafe_allow_html=True)
     st.title("Freight audit lab")
+    st.markdown('<div class="byline">A simulated freight invoice audit and month-end accrual pipeline, built by Shrey.'
+                f'<a href="{GITHUB_URL}">Code on GitHub</a></div>', unsafe_allow_html=True)
     st.markdown('<div class="banner"><strong>Synthetic data. Every dollar figure is an estimate from a simulated dataset.</strong></div>',
                 unsafe_allow_html=True)
     ensure_outputs()
