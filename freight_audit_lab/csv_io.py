@@ -40,3 +40,8 @@ def read_raw_csv(path):
 def load_reference(data_dir):
     """Every data/reference/*.csv as {file stem: DataFrame}."""
     return {p.stem: read_csv(p) for p in sorted((Path(data_dir) / "reference").glob("*.csv"))}
+
+
+def write_csv(df, path):
+    """Write a CSV the same way every time (ISO dates, \\n line endings) so reruns hash equal."""
+    df.to_csv(path, index=False, date_format="%Y-%m-%d", lineterminator="\n")

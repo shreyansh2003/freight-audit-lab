@@ -9,4 +9,5 @@ and coordinates are real public geography; carrier names are invented. Regenerat
 - `reference/`    what the shipper legitimately knows (lanes, contracts, shipments, AP receipt log, ...)
 - `raw/invoices/` messy carrier invoice files, one folder per carrier, one file per month received
 - `public/`       optional EIA weekly diesel CSV supplied by the author
+- `normalized/`   clean invoice tables produced by normalize.py from `raw/` and `reference/`
 - `ground_truth/` answer key; only evaluate.py and sweep.py may read it

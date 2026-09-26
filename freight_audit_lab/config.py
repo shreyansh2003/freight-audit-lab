@@ -49,7 +49,7 @@ REQUIRED_KEYS = [
     "traps.bol_typo_share", "traps.rounding_noise_share", "traps.rounding_noise_pct",
     "traps.rebill_original_overstate", "traps.unknown_charge_lines",
     "traps.unknown_charge_description",
-    "normalization.charge_code_map", "normalization.fallback_match",
+    "normalization.charge_code_map", "normalization.fallback_match", "normalization.totals_tolerance",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",

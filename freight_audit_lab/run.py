@@ -1,7 +1,8 @@
 """Run the pipeline end to end: python -m freight_audit_lab.run
 
-Stages 1-2: generate reference data, invoices, raw carrier files, and the answer key. Later
-stages append normalize, rerate, audit, and so on.
+Stages 1-2: generate reference data, invoices, raw carrier files, and the answer key.
+Stage 3: normalize the raw files and match invoices to shipments. Later stages append rerate,
+audit, and so on.
 """
 
 import time
@@ -10,6 +11,7 @@ from freight_audit_lab.config import load_config
 from freight_audit_lab.contract import (contract_linehaul, diesel_for_ship_date, fsc_ltl_amount,
                                         fsc_tl_amount, lookup_rate)
 from freight_audit_lab.generate import generate_all
+from freight_audit_lab.normalize import normalize, write_normalized
 
 
 def contract_spend_check(tables, cfg):
@@ -38,6 +40,16 @@ def main():
     spend = contract_spend_check(tables, cfg)
     print(f"contract LH+FSC estimate: LTL ${spend['LTL']:,.0f}  TL ${spend['TL']:,.0f}  "
           f"total ${sum(spend.values()):,.0f}")
+
+    t0 = time.perf_counter()
+    normalized = normalize(cfg)
+    write_normalized(normalized)
+    inv = normalized["invoices"]
+    print(f"normalize: {time.perf_counter() - t0:.1f}s")
+    for name, df in normalized.items():
+        print(f"  {name:<26} {len(df):>6} rows")
+    print(f"  match_method: {inv['match_method'].value_counts().to_dict()}  "
+          f"totals_ok: {int(inv['totals_ok'].sum())}/{len(inv)}  superseded: {int(inv['is_superseded'].sum())}")
 
 
 if __name__ == "__main__":

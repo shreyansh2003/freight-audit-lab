@@ -236,3 +236,56 @@ Grouped by area. Stage 8 will tidy this into its final form.
   unmapped line), so on generated data it always ties out; the check exists for real-file damage.
   Files are named by the month the invoice was **received**, and a re-run deletes `data/raw/`
   and `data/ground_truth/` first so stale files never linger.
+
+
+## Normalization and matching (Stage 3)
+
+- **Layouts live in `normalize.py`, not config, and are detected by exact header match.** The
+  set of column names must equal one layout's signature; the folder name is never used to pick a
+  parser. A file that matches none is skipped and logged as `unrecognized_header`. *Why:* the
+  layouts are what an AP team learns about each carrier's format, not tunable assumptions; a
+  parser that imported the generator's `HEADERS` would be circular (and a test forbids it).
+  A test checks that each generator header is detected as its own layout.
+- **Carrier id comes from the folder, except format C**, whose `Carrier` column is mapped through
+  `carriers[].name` and `name_variants`. An unknown name drops the row (`unknown_carrier_name`).
+  *Why:* formats A, B, D print no carrier at all, so the source folder is the only evidence.
+- **Row dropped vs invoice kept.** An invoice is dropped and logged when its invoice date, ship
+  date, weight, carrier, or invoice type cannot be read (nothing downstream can use it). A bad BOL,
+  unknown city, unreadable total, missing receipt, or unreadable/unmapped charge line is logged and
+  the invoice is kept, with that field blank or that line not loaded. *Change:* the `fatal` mask in
+  `parse_file`.
+- **`pro_number` is the base PRO**, with the `-C` / `-BD` / `R` / `B` suffix removed after it is read
+  as the invoice type. Suffix meaning is per layout: A `-C`/`-BD`, C `R`/`B`. Formats B and D use
+  their explicit type column (`original`, `rebill`, `balance_due`; `ORIGINAL`, `REBILL`, `BAL DUE`).
+- **Cities resolve against the shipper's own lanes** (`lanes.csv`): lowercase, drop punctuation,
+  then try the whole text and again without a trailing two-letter state. Output is the canonical
+  city name without state, because format B prints none. A city not in any lane is logged
+  (`unknown_city`) and left blank; the invoice can then only match by exact BOL.
+- **Fix counts** (`normalization_report.csv`) count only values the normalizer actually changed,
+  so a layout that is already clean for a fix (e.g. ISO dates in format B) has no row for it. The
+  `unit` column says what is counted: an `invoice`, a `line`, a `date field`, a `city field`, or an
+  `amount field`. Two-digit years (format D) read as 20xx.
+- **Received date comes only from `ap_receipt_log.csv`** joined on carrier + control id. A missing
+  row leaves `received_date` blank and is logged (`missing_receipt`).
+- **A charge line whose description is not in `normalization.charge_code_map` is not loaded.** It is
+  logged with its raw text and amount (`unmapped_charge`). If it carries dollars, the invoice also
+  fails the totals check; the generator's `MISC ADJ` lines are $0.00, so they do not.
+- **Totals check** compares the sum of loaded lines with the stated invoice total, within
+  `normalization.totals_tolerance` ($0.01, inclusive). A mismatch is logged (`totals_mismatch`) and
+  `totals_ok` is false; the invoice is kept. Long layouts repeat the total on every line; if the
+  lines disagree, the first is used and `inconsistent_total` is logged. `total` is the *stated*
+  total, `lines_total` the recomputed one.
+- **Superseding.** Rebills are processed in received order. Each supersedes the latest *earlier*
+  (by received date), not-yet-superseded invoice of the same carrier that is not a balance-due: the
+  one whose invoice number it cites (B, D) or, when only a suffix marks it (A, C), the one with the
+  same base PRO. So a rebill of a rebill supersedes the earlier rebill, and a balance-due invoice is
+  never superseded. If nothing qualifies, `rebill_target_not_found` is logged. `supersedes_invoice_number`
+  is filled with the target's invoice number for every rebill, including A and C where the file has none.
+- **Fallback match weight is within `weight_pct` of the *shipment's* weight, using the billed
+  weight.** This is tighter than the generator's phantom guard (which uses the larger of the two
+  weights), so a generated phantom can never fall back onto a real shipment. The cost: a typo'd BOL
+  on a shipment billed at a certified reweigh weight (5-20% heavier) or an inflated weight cannot
+  fall back and stays `unmatched`. In the default run this happens once. Two or more qualifying
+  shipments also leave the invoice unmatched. *Change:* `normalization.fallback_match`.
+- **Unmatched invoices have a blank `shipment_id`** (NaN once read back), and `match_method` is the
+  field to test.

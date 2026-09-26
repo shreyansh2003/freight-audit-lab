@@ -1,0 +1,37 @@
+carrier_id,fix_type,unit,count
+CARA,bol_canonicalization,invoice,216
+CARA,city_cleanup,city field,3022
+CARA,date_parsing,date field,3022
+CARA,invoice_type_from_pro_suffix,invoice,35
+CARB,bol_canonicalization,invoice,255
+CARB,cwt_to_lbs,invoice,1755
+CARC,bol_canonicalization,invoice,284
+CARC,carrier_name_variant,invoice,1681
+CARC,city_cleanup,city field,3362
+CARC,currency_to_float,amount field,5343
+CARC,date_parsing,date field,3362
+CARC,invoice_type_from_pro_suffix,invoice,23
+CARC,weight_text_cleanup,invoice,1681
+CARD,bol_canonicalization,invoice,1867
+CARD,charge_description_to_code,line,4065
+CARD,city_cleanup,city field,3734
+CARD,date_parsing,date field,3734
+CARD,invoice_type_text,invoice,1867
+CARE,bol_canonicalization,invoice,229
+CARE,city_cleanup,city field,3070
+CARE,date_parsing,date field,3070
+CARE,invoice_type_from_pro_suffix,invoice,35
+CARF,bol_canonicalization,invoice,123
+CARF,cwt_to_lbs,invoice,744
+CARG,bol_canonicalization,invoice,107
+CARG,carrier_name_variant,invoice,750
+CARG,city_cleanup,city field,1500
+CARG,currency_to_float,amount field,2319
+CARG,date_parsing,date field,1500
+CARG,invoice_type_from_pro_suffix,invoice,6
+CARG,weight_text_cleanup,invoice,750
+CARH,bol_canonicalization,invoice,545
+CARH,charge_description_to_code,line,1140
+CARH,city_cleanup,city field,1090
+CARH,date_parsing,date field,1090
+CARH,invoice_type_text,invoice,545

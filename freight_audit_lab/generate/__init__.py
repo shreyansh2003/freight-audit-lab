@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from freight_audit_lab.config import REPO_ROOT
+from freight_audit_lab.csv_io import write_csv
 from freight_audit_lab.generate import (diesel, ground_truth, inject, invoices, network, rates,
                                         render, shipments, traps)
 
@@ -25,13 +26,9 @@ and coordinates are real public geography; carrier names are invented. Regenerat
 - `reference/`    what the shipper legitimately knows (lanes, contracts, shipments, AP receipt log, ...)
 - `raw/invoices/` messy carrier invoice files, one folder per carrier, one file per month received
 - `public/`       optional EIA weekly diesel CSV supplied by the author
+- `normalized/`   clean invoice tables produced by normalize.py from `raw/` and `reference/`
 - `ground_truth/` answer key; only evaluate.py and sweep.py may read it
 """
-
-
-def write_csv(df, path):
-    """Write a CSV the same way every time (ISO dates, \\n line endings) so reruns hash equal."""
-    df.to_csv(path, index=False, date_format="%Y-%m-%d", lineterminator="\n")
 
 
 def generate_reference(cfg, data_dir=REPO_ROOT / "data", rng=None):

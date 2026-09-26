@@ -1,0 +1,3 @@
+source_file,csv_row,carrier_id,control_id,exception_type,raw_value,detail
+raw/invoices/CARD/2025-05.csv,280,CARD,49811726,unmapped_charge,MISC ADJ,"charge description not in normalization.charge_code_map; line not loaded, amount 0.00"
+raw/invoices/CARD/2025-12.csv,67,CARD,26104157,unmapped_charge,MISC ADJ,"charge description not in normalization.charge_code_map; line not loaded, amount 0.00"

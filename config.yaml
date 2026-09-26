@@ -134,6 +134,7 @@ normalization:
     "DETENTION - DRIVER": DETENTION
     "LINEHAUL": LH
   fallback_match: {ship_date_days: 1, weight_pct: 0.02}
+  totals_tolerance: 0.01            # sum of charge lines vs stated invoice total, dollars
 
 audit:
   tolerances:
