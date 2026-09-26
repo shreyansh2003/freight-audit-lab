@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from freight_audit_lab.generate.rates import (contract_linehaul, fsc_ltl_amount, fsc_ltl_pct,
+from freight_audit_lab.contract import (contract_linehaul, fsc_ltl_amount, fsc_ltl_pct,
                                               fsc_tl_amount, lookup_rate, ship_week)
 
 CENT = 0.01

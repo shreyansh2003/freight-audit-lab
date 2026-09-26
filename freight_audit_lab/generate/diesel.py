@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from freight_audit_lab.generate.rates import ship_week
+from freight_audit_lab.contract import ship_week
 
 EIA_DATE_FORMATS = ["%b %d, %Y", "%m/%d/%Y", "%Y-%m-%d", "%b-%d-%Y", "%d-%b-%Y", "%Y%m%d"]
 

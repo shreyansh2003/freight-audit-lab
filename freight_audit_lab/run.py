@@ -6,9 +6,9 @@ Stage 1: generate reference data. Later stages append normalize, rerate, audit, 
 import time
 
 from freight_audit_lab.config import load_config
+from freight_audit_lab.contract import (contract_linehaul, diesel_for_ship_date, fsc_ltl_amount,
+                                        fsc_tl_amount, lookup_rate)
 from freight_audit_lab.generate import generate_reference
-from freight_audit_lab.generate.rates import (contract_linehaul, diesel_for_ship_date,
-                                              fsc_ltl_amount, fsc_tl_amount, lookup_rate)
 
 
 def contract_spend_check(tables, cfg):
