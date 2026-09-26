@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from freight_audit_lab.accruals import (accessorial_allowance, accrue_at, accuracy_by_month, accuracy_summary,
-                                        journal_entries, month_ends, price_shipments, run_accruals, shipment_actuals,
+                                        authorizations_at_delivery, journal_entries, month_ends, price_shipments, run_accruals, shipment_actuals,
                                         write_accruals)
 from freight_audit_lab.audit.engine import audit
 from freight_audit_lab.csv_io import load_reference, read_csv
@@ -115,6 +115,19 @@ def test_an_authorization_recorded_after_month_end_is_not_in_the_allowance():
         d["code"] != "LIFTGATE", TS("2025-04-01")))
     allowance = accessorial_allowance(norm, ref["authorizations"], cfg, M).set_index("carrier_id")["accessorial_allowance"]
     assert allowance["CARA"] == pytest.approx(125.0 / 3)
+
+
+def test_recording_every_authorization_at_delivery_restores_a_late_authorization_to_the_allowance():
+    """Same setup as above: S5's liftgate is recorded 04-01, so the March allowance is $125 / 3. With every
+    authorization recorded at delivery (03-12) it is back to ($125 + $95) / 3, and nothing else changes."""
+    norm, _, ref, cfg = audit_inputs(HISTORY)
+    late = ref["authorizations"].assign(authorized_at=lambda d: d["authorized_at"].where(d["code"] != "LIFTGATE", TS("2025-04-01")))
+    at_delivery = authorizations_at_delivery(dict(ref, authorizations=late))
+    assert (at_delivery["authorized_at"] == TS("2025-03-12")).all()
+    assert at_delivery[["auth_id", "shipment_id", "code", "authorized_amount"]].equals(late[["auth_id", "shipment_id", "code", "authorized_amount"]])
+    for auths, expect in ((late, 125.0 / 3), (at_delivery, 220.0 / 3)):
+        allowance = accessorial_allowance(norm, auths, cfg, M).set_index("carrier_id")["accessorial_allowance"]
+        assert allowance["CARA"] == pytest.approx(expect)
 
 
 def test_supersession_after_month_end_is_not_used_at_month_end():
@@ -314,8 +327,27 @@ def test_full_data_accuracy_is_close_and_shipments_are_accrued_only_until_billed
     assert headline["mape_pct_estimate"] >= abs(headline["bias_pct_estimate"]) >= 0
 
 
+def test_full_data_sensitivity_changes_only_the_accrual_never_the_payable(accrued_full):
+    """The what-if books move the accessorial allowance and nothing else: same months, same shipments, same
+    payable. Earlier paperwork can only add history, so no month's accrual falls."""
+    result = accrued_full[2]
+    accuracy, sens = result["accuracy"], result["sensitivity"]
+    assert list(sens["month_end"]) == list(accuracy["month_end"]) and len(sens) == 13
+    assert (sens["shipments_accrued"] == accuracy["shipments_accrued"]).all()
+    assert (sens["actual_payable_estimate"] == accuracy["actual_payable_estimate"]).all()
+    assert (sens["accrual_estimate_as_built"] == accuracy["accrual_estimate"]).all()
+    assert (sens["late_auth_effect_estimate"] >= -CENT).all() and sens["late_auth_effect_estimate"].iloc[-1] > 0
+    moved = sens["error_estimate_auth_at_delivery"] - sens["error_estimate_as_built"]
+    assert (moved - sens["late_auth_effect_estimate"]).abs().max() < CENT
+    non_accessorial = lambda suffix: sens[f"error_estimate_{suffix}"] - sens[f"accessorial_error_estimate_{suffix}"]
+    assert (non_accessorial("as_built") - non_accessorial("auth_at_delivery")).abs().max() < CENT   # lh + fsc side untouched
+
+
 def test_outputs_are_written(accrued_full, tmp_path):
     write_accruals(accrued_full[2], tmp_path)
-    assert {p.name for p in tmp_path.iterdir()} == {"accruals_detail.csv", "accrual_accuracy.csv", "journal_entries.csv"}
+    assert {p.name for p in tmp_path.iterdir()} == {"accruals_detail.csv", "accrual_accuracy.csv",
+                                                    "accrual_sensitivity.csv", "journal_entries.csv"}
+    sens = read_csv(tmp_path / "accrual_sensitivity.csv")
+    assert len(sens) == 13 and "late_auth_effect_estimate" in sens.columns
     je = read_csv(tmp_path / "journal_entries.csv")
     assert list(je.columns) == ["je_id", "date", "type", "account", "cost_center", "debit", "credit", "memo"]

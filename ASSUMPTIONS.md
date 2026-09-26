@@ -429,6 +429,17 @@ Result numbers are not quoted here; read them from `outputs/accrual_accuracy.csv
   bills no shipment, so a shipment whose invoice could not be matched stays accrued for good; the default data
   has one such shipment (the typo'd-BOL invoice from the Stage 4 limitation), and accuracy counts it as
   billed $0 (`never_billed_shipments`). *Change:* not configurable (it is what the cutoff means).
+- **The one never-billed shipment is the typo'd-BOL reweigh invoice, and it has three knock-ons.** Checked
+  against the reference data (not the answer key): shipment SHP06693 (carrier C, BOL 81078675, ship
+  2025-09-10, 263 lb, certified reweigh 279 lb on 2025-09-14) and invoice CARC:02574057 (BOL 81076875, two
+  adjacent digits swapped, same lane and ship date, billed weight 279 lb) are the same freight. (1) The
+  shipment is accrued at every month-end from delivery to the end of the period and never released, because the
+  invoice that bills it is `unmatched`. (2) Accuracy counts its actual payable as $0, since `shipment_actuals`
+  reads matched invoices only, so its accrual shows up as over-accrual in those months; filter
+  `accruals_detail.csv` on a blank `invoices_billed` to see how much. (3) The same invoice is the phantom false
+  positive from the Stage 4 limitation, so its whole total sits in the recoverable estimate. In real books AP
+  would match it by hand, clearing the accrual and dropping the dispute, so this is a pipeline artifact, not
+  a finding about accrual method. It is left in, not patched, for the same reason as the Stage 4 limitation.
 - **"Billed at M" uses only what was known at M, including invoices superseded later.** An invoice received on
   or before M bills its shipment even if a rebill received after M replaces it: the shipper had the bill in hand
   at M. Supersession is used only if it was known at M. To support that, normalization records `superseded_on`
@@ -465,3 +476,12 @@ Result numbers are not quoted here; read them from `outputs/accrual_accuracy.csv
   month's own accrual population, so a shipment accrued at three month-ends appears in three months.
   `accuracy_summary` reports MAPE (mean absolute monthly error %) and bias (mean signed monthly error %).
   Errors from injected errors the audit did not flag (below tolerance) stay in payable, by design.
+- **Late-authorization sensitivity** (`outputs/accrual_sensitivity.csv`, computed in `accruals.py`). The same
+  accruals are rerun on books where every authorization was recorded on the shipment's delivery date
+  (`authorizations_at_delivery`), using the same no-look-ahead rules: the allowance still counts only invoices
+  received and authorizations recorded on or before M. Which shipment-and-code pairs are authorized is unchanged,
+  only when. The population and the "actual payable" side are identical in both runs (the audit is not
+  rerun), so the only thing that moves is the accessorial allowance, and `late_auth_effect_estimate` is the
+  scenario accrual minus the built accrual. The table gives error and error % overall and for accessorials
+  alone, as built and in the scenario, for each month and an ALL row. *Change:* `accessorials.late_authorization_share`
+  sets how much paperwork is late in the generated data.

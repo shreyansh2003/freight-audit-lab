@@ -208,6 +208,43 @@ def accuracy_summary(accuracy):
             "bias_pct_estimate": float(monthly["error_pct_estimate"].mean())}
 
 
+# ---------------------------------------------------------------- sensitivity: late authorizations
+
+SENSITIVITY_METRICS = ["accrual_estimate", "error_estimate", "error_pct_estimate",
+                       "accessorial_accrual_estimate", "accessorial_error_estimate", "accessorial_error_pct_estimate"]
+
+
+def authorizations_at_delivery(ref):
+    """The what-if books: every authorization recorded on the day the shipment was delivered.
+
+    Some accessorial paperwork is recorded weeks after the carrier's invoice (`late_authorization_share`).
+    At month-end that paperwork is not on file yet, so those real charges drop out of the accessorial
+    history and the allowance runs low. Setting every `authorized_at` to the delivery date shows how much
+    of the accrual error that lateness explains. Which shipment-and-code pairs are authorized does not
+    change, only when.
+    """
+    delivered = ref["shipments"].set_index("shipment_id")["delivery_date"]
+    auths = ref["authorizations"].copy()
+    auths["authorized_at"] = auths["shipment_id"].map(delivered)
+    return auths
+
+
+def accrual_sensitivity(built_accuracy, scenario_accuracy):
+    """Monthly accrual error as built next to the same error with every authorization recorded at delivery.
+
+    Both runs use the same no-look-ahead rules and the same shipments, so `actual_payable_estimate` is
+    identical: only the accrual (through the accessorial allowance) moves. `late_auth_effect_estimate` is
+    the scenario error minus the built error in dollars (positive = late paperwork made the accrual lower).
+    """
+    keep = ["month_end", "shipments_accrued", "actual_payable_estimate"]
+    out = built_accuracy[keep].copy()
+    for metric in SENSITIVITY_METRICS:
+        out[f"{metric}_as_built"] = built_accuracy[metric].to_numpy()
+        out[f"{metric}_auth_at_delivery"] = scenario_accuracy[metric].to_numpy()
+    out["late_auth_effect_estimate"] = out["accrual_estimate_auth_at_delivery"] - out["accrual_estimate_as_built"]
+    return out
+
+
 # ---------------------------------------------------------------- journal entries
 
 
@@ -238,17 +275,31 @@ def journal_entries(detail, cfg):
 # ---------------------------------------------------------------- the run
 
 
-def run_accruals(norm, ref, cfg, engine):
-    """Accrue at every month-end. Returns {"detail", "accuracy", "journal_entries"}."""
-    priced = price_shipments(ref["shipments"], ref, cfg)
+def accrue_all_months(priced, norm, ref, cfg, actuals):
+    """The accrual detail at every month-end, each shipment joined to what it eventually cost."""
     detail = pd.concat([accrue_at(m, priced, norm, ref, cfg) for m in month_ends(cfg)], ignore_index=True)
-    detail = detail.merge(shipment_actuals(norm, engine), on="shipment_id", how="left")
+    detail = detail.merge(actuals, on="shipment_id", how="left")
     detail["error_estimate"] = (detail["accrual_estimate"] - detail["actual_payable_estimate"].fillna(0.0)).round(2)
-    return {"detail": detail, "accuracy": accuracy_by_month(detail), "journal_entries": journal_entries(detail, cfg)}
+    return detail
+
+
+def run_accruals(norm, ref, cfg, engine):
+    """Accrue at every month-end. Returns {"detail", "accuracy", "sensitivity", "journal_entries"}.
+
+    The sensitivity reruns the same accruals on books where every authorization was recorded at delivery
+    (`authorizations_at_delivery`); the "actual" side is the same in both runs."""
+    priced = price_shipments(ref["shipments"], ref, cfg)
+    actuals = shipment_actuals(norm, engine)
+    detail = accrue_all_months(priced, norm, ref, cfg, actuals)
+    accuracy = accuracy_by_month(detail)
+    what_if = accrue_all_months(priced, norm, dict(ref, authorizations=authorizations_at_delivery(ref)), cfg, actuals)
+    return {"detail": detail, "accuracy": accuracy,
+            "sensitivity": accrual_sensitivity(accuracy, accuracy_by_month(what_if)),
+            "journal_entries": journal_entries(detail, cfg)}
 
 
 def write_accruals(result, out_dir=OUTPUT_DIR):
-    """Write outputs/accruals_detail.csv, accrual_accuracy.csv, journal_entries.csv."""
+    """Write outputs/accruals_detail.csv, accrual_accuracy.csv, accrual_sensitivity.csv, journal_entries.csv."""
     out_dir.mkdir(parents=True, exist_ok=True)
     write_csv(result["detail"], out_dir / "accruals_detail.csv")
     acc = result["accuracy"].copy()
@@ -257,4 +308,9 @@ def write_accruals(result, out_dir=OUTPUT_DIR):
     numeric = [c for c in acc.columns if c != "month_end"]
     acc = acc.astype({c: float for c in numeric}).round({c: 4 if c.endswith("_pct_estimate") else 2 for c in numeric})
     write_csv(acc.astype({c: int for c in counts}), out_dir / "accrual_accuracy.csv")
+    sens = result["sensitivity"].copy()
+    sens["month_end"] = sens["month_end"].map(lambda m: m if isinstance(m, str) else m.strftime("%Y-%m-%d"))
+    numeric = [c for c in sens.columns if c != "month_end"]
+    sens = sens.astype({c: float for c in numeric}).round({c: 4 if "_pct_" in c else 2 for c in numeric})
+    write_csv(sens.astype({"shipments_accrued": int}), out_dir / "accrual_sensitivity.csv")
     write_csv(result["journal_entries"], out_dir / "journal_entries.csv")
