@@ -6,6 +6,7 @@ Nothing in this folder describes a real company, carrier, shipment, or person. C
 and coordinates are real public geography; carrier names are invented. Regenerate with
 `python -m freight_audit_lab.run` (same config.yaml and seed give byte-identical files).
 
-- `reference/`    what the shipper legitimately knows (lanes, contracts, shipments, ...)
+- `reference/`    what the shipper legitimately knows (lanes, contracts, shipments, AP receipt log, ...)
+- `raw/invoices/` messy carrier invoice files, one folder per carrier, one file per month received
 - `public/`       optional EIA weekly diesel CSV supplied by the author
 - `ground_truth/` answer key; only evaluate.py and sweep.py may read it

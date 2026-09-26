@@ -15,6 +15,16 @@ CWT_PREFIX = "cwt_"          # rate card columns cwt_<min>_<max> hold $/cwt per 
 STEP_ROUNDING_DECIMALS = 6   # guards floor() against 20.999999... float artifacts
 
 
+def cents(x):
+    """Round a money amount to cents. The one rounding rule for every dollar figure.
+
+    Converts to a plain Python float first: `round()` on a numpy float and on a Python float
+    can disagree by a cent at exact half-cent ties (e.g. 78.325), and the generator and the
+    re-rater must land on the same cent.
+    """
+    return round(float(x), 2)
+
+
 def break_column(weight_break):
     """Rate card column name for a weight break, e.g. cwt_1000_1999."""
     return f"{CWT_PREFIX}{weight_break['min']}_{weight_break['max']}"
@@ -67,7 +77,7 @@ def contract_linehaul(rate_row, weight_lbs, miles):
     floor either way.
     """
     if rate_row["mode"] == "TL":
-        return round(max(rate_row["min_charge"], rate_row["rate_per_mile"] * miles), 2)
+        return cents(max(rate_row["min_charge"], rate_row["rate_per_mile"] * miles))
 
     breaks = ltl_breaks(rate_row)
     applicable = [rate for min_lbs, rate in breaks if min_lbs <= weight_lbs]
@@ -77,7 +87,7 @@ def contract_linehaul(rate_row, weight_lbs, miles):
         for min_lbs, rate in breaks:
             if min_lbs > weight_lbs:
                 charge = min(charge, rate * min_lbs / 100)
-    return round(max(rate_row["min_charge"], charge), 2)
+    return cents(max(rate_row["min_charge"], charge))
 
 
 # ---------------------------------------------------------------- fuel surcharge
@@ -119,7 +129,7 @@ def fsc_ltl_pct(diesel_price, cfg):
 
 def fsc_ltl_amount(linehaul, diesel_price, cfg):
     """LTL fuel surcharge in dollars: FSC % applied to linehaul."""
-    return round(linehaul * fsc_ltl_pct(diesel_price, cfg), 2)
+    return cents(linehaul * fsc_ltl_pct(diesel_price, cfg))
 
 
 def fsc_tl_per_mile(diesel_price, cfg):
@@ -134,4 +144,4 @@ def fsc_tl_per_mile(diesel_price, cfg):
 
 def fsc_tl_amount(miles, diesel_price, cfg):
     """TL fuel surcharge in dollars: $/mile x lane miles."""
-    return round(fsc_tl_per_mile(diesel_price, cfg) * miles, 2)
+    return cents(fsc_tl_per_mile(diesel_price, cfg) * miles)

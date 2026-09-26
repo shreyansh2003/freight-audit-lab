@@ -1,6 +1,7 @@
 """Run the pipeline end to end: python -m freight_audit_lab.run
 
-Stage 1: generate reference data. Later stages append normalize, rerate, audit, and so on.
+Stages 1-2: generate reference data, invoices, raw carrier files, and the answer key. Later
+stages append normalize, rerate, audit, and so on.
 """
 
 import time
@@ -8,7 +9,7 @@ import time
 from freight_audit_lab.config import load_config
 from freight_audit_lab.contract import (contract_linehaul, diesel_for_ship_date, fsc_ltl_amount,
                                         fsc_tl_amount, lookup_rate)
-from freight_audit_lab.generate import generate_reference
+from freight_audit_lab.generate import generate_all
 
 
 def contract_spend_check(tables, cfg):
@@ -28,10 +29,12 @@ def contract_spend_check(tables, cfg):
 def main():
     cfg = load_config()
     t0 = time.perf_counter()
-    tables = generate_reference(cfg)
-    print(f"generate reference: {time.perf_counter() - t0:.1f}s")
+    tables = generate_all(cfg)
+    print(f"generate: {time.perf_counter() - t0:.1f}s")
     for name, df in tables.items():
-        print(f"  {name:<22} {len(df):>6} rows")
+        if name != "raw_files":
+            print(f"  {name:<22} {len(df):>6} rows")
+    print(f"  {'raw carrier files':<22} {len(tables['raw_files']):>6} files")
     spend = contract_spend_check(tables, cfg)
     print(f"contract LH+FSC estimate: LTL ${spend['LTL']:,.0f}  TL ${spend['TL']:,.0f}  "
           f"total ${sum(spend.values()):,.0f}")

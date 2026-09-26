@@ -1,11 +1,18 @@
-"""Synthetic data generator. Stage 1 writes the shipper's reference data to data/reference/."""
+"""Synthetic data generator.
 
+Stage 1 writes the shipper's reference data to data/reference/. Stage 2 builds canonical
+invoices, injects traps and errors, and writes the messy carrier files (data/raw/), the AP
+receipt log (data/reference/), and the answer key (data/ground_truth/).
+"""
+
+import shutil
 from pathlib import Path
 
 import numpy as np
 
 from freight_audit_lab.config import REPO_ROOT
-from freight_audit_lab.generate import diesel, network, rates, shipments
+from freight_audit_lab.generate import (diesel, ground_truth, inject, invoices, network, rates,
+                                        render, shipments, traps)
 
 DATA_README = """# data/
 
@@ -15,7 +22,8 @@ Nothing in this folder describes a real company, carrier, shipment, or person. C
 and coordinates are real public geography; carrier names are invented. Regenerate with
 `python -m freight_audit_lab.run` (same config.yaml and seed give byte-identical files).
 
-- `reference/`    what the shipper legitimately knows (lanes, contracts, shipments, ...)
+- `reference/`    what the shipper legitimately knows (lanes, contracts, shipments, AP receipt log, ...)
+- `raw/invoices/` messy carrier invoice files, one folder per carrier, one file per month received
 - `public/`       optional EIA weekly diesel CSV supplied by the author
 - `ground_truth/` answer key; only evaluate.py and sweep.py may read it
 """
@@ -56,4 +64,54 @@ def generate_reference(cfg, data_dir=REPO_ROOT / "data", rng=None):
               "reweigh_certificates": reweighs}
     for name, df in tables.items():
         write_csv(df, ref_dir / f"{name}.csv")
+    return tables
+
+
+def generate_invoices(cfg, tables, data_dir=REPO_ROOT / "data", rng=None):
+    """Stage 2: canonical invoices -> traps -> errors -> messy files and the answer key.
+
+    Draws from the same generator as Stage 1, after it, in a fixed order, so Stage 1 files
+    are unchanged (except authorizations.csv, where the late-authorization trap moves some
+    authorized_at dates). Returns the canonical tables; only the raw files, the AP receipt log,
+    the updated authorizations, and the labels are written.
+    """
+    rng = rng if rng is not None else np.random.default_rng(cfg["seed"])
+    data_dir = Path(data_dir)
+
+    invs, ctx = invoices.build_originals(tables, cfg, rng)
+    traps.select_followups(invs, ctx, cfg, rng)
+    auths = traps.apply_late_authorization(invs, ctx, tables["authorizations"], cfg, rng)
+    traps.apply_bol_noise(invs, tables["shipments"]["bol"], cfg, rng)
+    inject.inject_errors(invs, ctx, tables, cfg, rng)
+    traps.apply_rounding_noise(invs, cfg, rng)
+    traps.add_unknown_charges(invs, cfg, rng)
+    traps.build_rebills(invs, ctx, cfg, rng)
+    traps.build_balance_dues(invs, ctx, cfg, rng)
+    inject.build_duplicates(invs, ctx, cfg, rng)
+    inject.build_phantoms(invs, tables, cfg, rng)
+    invoices.assign_ids(invs, cfg, rng)
+
+    labels = ground_truth.build_labels(invs)
+    receipt_log = invoices.invoice_frame(invs)[["carrier_id", "control_id", "received_date"]]
+    receipt_log = receipt_log.sort_values(["received_date", "carrier_id", "control_id"]).reset_index(drop=True)
+    files = render.render_invoices(invs, cfg, rng)
+
+    write_csv(auths, data_dir / "reference" / "authorizations.csv")
+    write_csv(receipt_log, data_dir / "reference" / "ap_receipt_log.csv")
+    render.write_raw_files(files, data_dir)
+    truth_dir = data_dir / "ground_truth"
+    if truth_dir.exists():
+        shutil.rmtree(truth_dir)
+    truth_dir.mkdir(parents=True)
+    write_csv(labels, truth_dir / "labels.csv")
+    return {"authorizations": auths, "ap_receipt_log": receipt_log, "labels": labels,
+            "invoices": invoices.invoice_frame(invs), "invoice_lines": invoices.line_frame(invs),
+            "raw_files": files}
+
+
+def generate_all(cfg, data_dir=REPO_ROOT / "data"):
+    """Stage 1 then Stage 2 from one seeded generator. Returns all tables."""
+    rng = np.random.default_rng(cfg["seed"])
+    tables = generate_reference(cfg, data_dir, rng)
+    tables.update(generate_invoices(cfg, tables, data_dir, rng))
     return tables

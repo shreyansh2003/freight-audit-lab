@@ -1,5 +1,6 @@
 """IDs must survive a CSV round trip as text, leading zeros and all."""
 
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -45,6 +46,6 @@ def test_nobody_else_calls_pd_read_csv():
     for path in list((REPO / "freight_audit_lab").rglob("*.py")) + list((REPO / "tests").rglob("*.py")):
         if path.name in ("csv_io.py", "test_csv_io.py"):
             continue
-        if "read_csv(" in path.read_text():
+        if re.search(r"\b(pd|pandas)\.read_csv\(", path.read_text()):
             offenders.append(str(path.relative_to(REPO)))
     assert not offenders, f"use freight_audit_lab.csv_io instead of read_csv in: {offenders}"
