@@ -27,7 +27,7 @@ h1 {{ font-size: 1.7rem !important; font-weight: 650 !important; letter-spacing:
 h3 {{ font-size: 1.05rem !important; font-weight: 600 !important; }}
 .banner {{ border-left: 3px solid {charts.ACCENT}; background: #F6F8FA; padding: 8px 14px; margin: 4px 0 18px 0;
           color: {charts.INK}; font-size: 0.92rem; }}
-.kpi {{ border: 1px solid #E3E7EB; border-radius: 8px; padding: 14px 16px; min-height: 124px; }}
+.kpi {{ border: 1px solid #E3E7EB; border-radius: 8px; padding: 14px 16px; min-height: 140px; }}
 .kpi .label {{ font-size: 0.82rem; color: {charts.MUTED}; }}
 .kpi .value {{ font-size: 1.85rem; font-weight: 650; line-height: 1.2; color: {charts.INK}; }}
 .kpi.accent .value {{ color: {charts.ACCENT}; }}
