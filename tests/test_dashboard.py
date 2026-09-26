@@ -79,7 +79,7 @@ def test_systemic_bullet_picks_the_smallest_p_value_and_mentions_the_others(smal
 def test_false_flag_bullet_names_the_top_cause_out_of_the_additive_total_and_never_names_other(small):
     text = trap_finding_text(small)
     assert "Rate amendment caused the most baseline false flags" in text and "554 of its 900 false flags (62%)" in text
-    assert "ignores effective dates" in text and "The engine raised 1 false flags in total." in text
+    assert "ignores effective dates" in text and "The engine raised 1 false flag in total." in text
     small["baseline_fp_causes"].loc[2, "false_flags"] = 5000                    # "other" larger than every named cause
     assert "Rate amendment caused" in trap_finding_text(small)
 

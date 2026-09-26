@@ -55,7 +55,7 @@ A trap is an invoice that differs from the plain contract for a good reason, so 
 
 ### 10. How do you know the systemic finding is not luck?
 
-I compare a carrier with the other carriers of the same kind, and I need three things: enough invoices, a flag rate at least 3.0 times the peers' rate, and a p-value below a strict threshold that is divided by the number of comparisons I ran. For Carrier F Trucking that was 178 of 182 fuel surcharges flagged against 1.5% at its peers, far past the threshold. But the test also flagged 1 weaker pattern (Carrier C Express, 16 of 346, p = 1.6e-05 against a threshold of 2.1e-05) that I did not plant. It is either chance or a carrier that simply errs more often, and the test cannot tell which. That is why I call it triage: it tells me whom to ask, not who is guilty.
+I compare a carrier with the other carriers of the same kind, and I need three things: enough invoices, a flag rate at least 3.0 times the peers' rate, and a p-value below a strict threshold that is divided by the number of comparisons I ran. For Carrier F Trucking that was 178 of 182 fuel surcharges flagged against 1.5% at its peers, far past the threshold. But the test also flagged 1 weaker pattern (Carrier C Express, 16 of 346, p = 1.6e-05 against a threshold of 2.1e-05). That carrier is configured in `config.yaml` to err more often than its peers, so the pattern is a planted difference in error rate, not a second systemic issue, and on a real book the test could not tell the two apart. That is why I call it triage: it tells me whom to ask, not who is guilty.
 
 ### 11. Why rules and not machine learning?
 

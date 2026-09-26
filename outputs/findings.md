@@ -11,7 +11,7 @@ Three one-sentence findings about **method**, not about injected error rates. Ev
 - Sources: `outputs/eval_by_type.csv` (duplicate_invoice rows), `outputs/baseline_fp_causes.csv` (the rebill / balance due cause).
 - Caveat: the baseline is deliberately given no supersession logic; the finding is about which rule closes the gap, not about spreadsheets being bad.
 
-## 2. A per-invoice tolerance check cannot see a systemic fuel error; a peer-rate test can
+## 2. A peer-rate test turns many separate fuel flags into one carrier-level escalation
 
 > Carrier F Trucking's fuel surcharge was overbilled by only about $44 (estimate) on a typical flagged invoice, yet a one-sided binomial test against the other TL carriers showed 178 of 182 invoices flagged in Aug 2025 to Oct 2025 (97.8% against 1.5%, p = 1.2e-320), which points to one wrong fuel table and not 178 separate mistakes.
 

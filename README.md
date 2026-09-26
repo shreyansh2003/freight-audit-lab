@@ -22,7 +22,7 @@ Near-perfect engine precision is expected: I built the generator and the engine,
 
 1. **Where the baseline fails.** Its duplicate flags were 60% wrong (200 of 334), 100% of the wrong ones from rebills and balance-due invoices, which legitimately repeat an invoice's BOL.
 2. **Where the engine misses.** It missed 129 injected errors, 118 of them below its own tolerances, worth $691 (answer-key dollars). The sweep recommends changing 0 of 4 tolerances.
-3. **The systemic-issue test.** Carrier F Trucking was flagged on 178 of 182 fuel surcharges shipped Aug 2025 to Oct 2025, against 1.5% at the other truckload carriers (p = 1.2e-320). Each overcharge is only about $44 (estimate), so the pattern, not any one invoice, is the finding. The test also flagged 1 weaker pattern I did not plant: triage, not proof.
+3. **The systemic-issue test.** Carrier F Trucking was flagged on 178 of 182 fuel surcharges shipped Aug 2025 to Oct 2025, against 1.5% at the other truckload carriers (p = 1.2e-320). Each overcharge is only about $44 (estimate), so the pattern, not any one invoice, is the finding. The test also flagged 1 weaker pattern (a high-error carrier): triage, not proof.
 4. **The accrual diagnosis.** Accruals landed 0.24% below eventual payable (mean monthly error 0.31%, estimates). Accessorials were only 1.6% of accrued dollars but 61% of the net shortfall, and 43% of it is authorizations recorded after month-end.
 
 ## Approach

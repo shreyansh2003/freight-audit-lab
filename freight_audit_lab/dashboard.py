@@ -148,7 +148,7 @@ def trap_finding_text(o):
     engine_fp = int(o["eval_engine_vs_baseline"].set_index("error_type").loc["ALL", "engine_fp"])
     return (f"**{top['description'].capitalize()} caused the most baseline false flags.** {int(top['false_flags']):,} of "
             f"its {total:,} false flags ({pct(top['false_flags'] / total, 0)}), each counted under one cause only{why}. "
-            f"The engine raised {engine_fp} false flags in total.")
+            f"The engine raised {engine_fp} false flag{'s' if engine_fp != 1 else ''} in total.")
 
 
 def accrual_finding_text(o):
