@@ -327,7 +327,7 @@ def main():
     st.title("Freight audit lab")
     st.markdown('<div class="byline">A simulated freight invoice audit and month-end accrual pipeline, built by '
                 f'<a href="{LINKEDIN_URL}" style="margin-left:0">Shreyansh Agrawal</a>.'
-                f'<a href="{GITHUB_URL}">Code on GitHub</a> Built with help from Claude.</div>', unsafe_allow_html=True)
+                f'<a href="{GITHUB_URL}">Code on GitHub</a> · Built with help from Claude.</div>', unsafe_allow_html=True)
     st.markdown('<div class="banner"><strong>Synthetic data. Every dollar figure is an estimate from a simulated dataset.</strong></div>',
                 unsafe_allow_html=True)
     ensure_outputs()

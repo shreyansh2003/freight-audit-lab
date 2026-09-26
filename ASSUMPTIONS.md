@@ -618,4 +618,4 @@ Result numbers are not quoted here; read them from `outputs/summary.json`.
 - **"Accruals" totals.** `accrual_estimate` in `accrual_accuracy.csv` and `summary.json` is the sum of the month-end balances, so
   a shipment still unbilled at the next month-end is counted again. The documents call it that and never as one accrual amount.
 - **Author details** (LinkedIn, GitHub) are in `docs/README.template.md` and `GITHUB_URL` / the byline in `streamlit_app.py`.
-  The one placeholder left is `[dashboard link]` in `docs/README.template.md`, because the URL exists only after deploying.
+  The live dashboard link (https://shreyansh-freight-audit-lab.streamlit.app) is in `docs/README.template.md`; it was filled in after deploying to Streamlit Community Cloud.

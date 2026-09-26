@@ -68,14 +68,15 @@ def test_every_template_renders_from_the_committed_summary_and_matches_the_commi
         assert target.read_text() == text, f"{target.relative_to(REPO_ROOT)} is stale: rerun the pipeline"
 
 
-def test_readme_is_one_page_and_keeps_its_placeholders():
+def test_readme_is_one_page_and_has_its_links():
     text = (REPO_ROOT / "README.md").read_text()
     prose = re.sub(r"```.*?```", "", re.sub(r"<!--.*?-->", "", text, flags=re.S), flags=re.S)
     words = " ".join(line for line in prose.splitlines() if not line.startswith("|")).split()
     assert len(words) <= README_WORD_LIMIT
     assert "[Shreyansh Agrawal](https://www.linkedin.com/in/shreyansh2003/)" in text
     assert "(https://github.com/shreyansh2003/freight-audit-lab)" in text
-    assert "[dashboard link]" in text and "[Your name]" not in text            # the URL exists only after deploying
+    assert "(https://shreyansh-freight-audit-lab.streamlit.app)" in text                                  # live dashboard link
+    assert "[dashboard link]" not in text and "[Your name]" not in text        # no placeholders left
     assert text.index("## The comparison") < text.index("recoverable estimate")       # the comparison leads, dollars come later
     assert "built the generator" in text                                               # the plain statement about circularity
 
