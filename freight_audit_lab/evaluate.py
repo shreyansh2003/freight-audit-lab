@@ -30,6 +30,16 @@ NO_TRAP = "(none: clean invoice)"
 KEY = ["invoice_id", "error_type"]
 SYSTEMS = ["engine", "baseline"]
 
+# Baseline false flags, one cause each (see baseline_fp_causes). (key, plain-English label), in precedence order.
+FP_CAUSES = [("rate_amendment", "rate amendment"),
+             ("reweigh", "reweigh"),
+             ("weight_misread_as_rate", "weight error misread as rate"),
+             ("late_authorization", "late authorization"),
+             ("rebill_balance_due", "rebill / balance due"),
+             ("bol_typo_or_zero", "BOL typo or dropped leading zero"),
+             ("other", "other")]
+CAUSE_LABEL = dict(FP_CAUSES)
+
 
 def load_labels(data_dir=DATA_DIR):
     """The answer key: one row per (invoice_id, label). Blank `mode` becomes ''."""
@@ -135,6 +145,68 @@ def trap_table(labels, outs):
     return table.assign(_c=table["trap"] == NO_TRAP).sort_values(["_c", "trap"]).drop(columns="_c").reset_index(drop=True)
 
 
+def fp_cause(error_type, traps, errors, bol_zero_dropped):
+    """The one cause of a false flag, from the rule that raised it and what the invoice's paper trail says.
+
+    Precedence, first match wins (this is the order the causes are listed in FP_CAUSES):
+      1. rate flag on an invoice at an amended carrier-lane rate           -> rate amendment
+      2. rate or weight flag on an invoice billed at a certified reweigh weight -> reweigh
+      3. rate flag on an invoice whose weight really was overbilled         -> weight error misread as rate
+      4. accessorial flag where the authorization was recorded after the invoice date -> late authorization
+      5. duplicate flag on a rebill or balance-due invoice                  -> rebill / balance due
+      6. phantom flag where the BOL has a typo or lost its leading zeros    -> BOL typo or dropped leading zero
+      7. anything else                                                      -> other
+    The rule that raised the flag settles most cases (only rate flags can reach 1, 2 or 3); precedence matters
+    only when a rate flag qualifies for more than one, e.g. an amended lane that was also reweighed: the
+    amendment is counted, not the reweigh. Causes are read from the invoice's trap and error labels, so a
+    resent duplicate (which copies no trap label but its BOL's) of an amended-lane invoice falls to "other".
+    """
+    if error_type == "rate_overcharge":
+        if "rate_amendment" in traps:
+            return "rate_amendment"
+        if "documented_reweigh" in traps:
+            return "reweigh"
+        if "weight_overbilling" in errors:
+            return "weight_misread_as_rate"
+    elif error_type == "weight_overbilling" and "documented_reweigh" in traps:
+        return "reweigh"
+    elif error_type == "unauthorized_accessorial" and "late_authorization" in traps:
+        return "late_authorization"
+    elif error_type == "duplicate_invoice" and traps & {"rebill", "balance_due"}:
+        return "rebill_balance_due"
+    elif error_type == "phantom_invoice" and ("bol_typo" in traps or bol_zero_dropped):
+        return "bol_typo_or_zero"
+    return "other"
+
+
+def baseline_fp_causes(labels, baseline_outcomes):
+    """Attribute each baseline false flag to exactly one cause, so the causes add up to the total.
+
+    The trap table (`trap_table`) counts a false flag under every trap its invoice carries, which double
+    counts: a rate flag on an amended-lane BOL-noise invoice appears under both. This table answers the
+    question "why did the baseline raise this flag?" once per flag, using the precedence in `fp_cause`.
+    The unit is the same as everywhere else: one (invoice_id, error_type) outcome with status FP.
+    """
+    traps = labels[labels["label_kind"] == "trap"]
+    trap_sets = traps.groupby("invoice_id")["label"].agg(set)
+    zero_ids = set(traps.loc[(traps["label"] == "bol_format") & (traps["mode"] == "zeros_dropped"), "invoice_id"])
+    error_sets = labels[labels["label_kind"] == "error"].groupby("invoice_id")["label"].agg(set)
+    fp = baseline_outcomes[baseline_outcomes["status"] == "FP"]
+    cause = [fp_cause(row.error_type, trap_sets.get(row.invoice_id, set()), error_sets.get(row.invoice_id, set()),
+                      row.invoice_id in zero_ids) for row in fp.itertuples()]
+    counts = pd.Series(cause, dtype="object").value_counts()
+    total = len(fp)
+    table = pd.DataFrame({"cause": [k for k, _ in FP_CAUSES], "description": [v for _, v in FP_CAUSES]})
+    table["false_flags"] = table["cause"].map(counts).fillna(0).astype(int)
+    table["share_of_false_flags"] = table["false_flags"] / total if total else 0.0
+    by_rule = pd.DataFrame({"cause": cause, "error_type": fp["error_type"].to_numpy()})
+    table["by_rule"] = table["cause"].map(lambda c: ";".join(
+        f"{t}:{n}" for t, n in by_rule.loc[by_rule["cause"] == c, "error_type"].value_counts().sort_index().items()))
+    assert table["false_flags"].sum() == total          # every false flag has exactly one cause
+    table = table.assign(_o=table["cause"] == "other").sort_values(["_o", "false_flags"], ascending=[True, False], kind="stable")
+    return table.drop(columns="_o").reset_index(drop=True)
+
+
 def engine_vs_baseline(type_tables):
     """Headline metrics side by side, one row per error type plus ALL."""
     cols = ["flags", "tp", "fp", "fn", "precision", "recall", "f1", "dollar_recall", "flagged_dollars_estimate"]
@@ -146,12 +218,13 @@ def engine_vs_baseline(type_tables):
 
 
 def evaluate(engine_flags, baseline_flags, labels):
-    """Score both systems. Returns {"by_type", "by_mode", "traps", "engine_vs_baseline", "outcomes"}."""
+    """Score both systems. Returns {"by_type", "by_mode", "traps", "baseline_fp_causes", "engine_vs_baseline", "outcomes"}."""
     outs = {"engine": outcomes(engine_flags, labels), "baseline": outcomes(baseline_flags, labels)}
     type_tables = {system: by_type(o, system) for system, o in outs.items()}
     return {"by_type": pd.concat(type_tables.values(), ignore_index=True),
             "by_mode": by_mode(labels, outs),
             "traps": trap_table(labels, outs),
+            "baseline_fp_causes": baseline_fp_causes(labels, outs["baseline"]),
             "engine_vs_baseline": engine_vs_baseline(type_tables),
             "outcomes": outs}
 
@@ -162,7 +235,9 @@ def round_for_csv(df):
 
 
 def write_evaluation(result, out_dir=OUTPUT_DIR):
-    """Write outputs/eval_by_type.csv, eval_by_mode.csv, eval_traps.csv, eval_engine_vs_baseline.csv."""
+    """Write outputs/eval_by_type.csv, eval_by_mode.csv, eval_traps.csv, eval_engine_vs_baseline.csv and
+    baseline_fp_causes.csv."""
     out_dir.mkdir(parents=True, exist_ok=True)
     for name in ("by_type", "by_mode", "traps", "engine_vs_baseline"):
         write_csv(round_for_csv(result[name]), out_dir / f"eval_{name}.csv")
+    write_csv(result["baseline_fp_causes"].round({"share_of_false_flags": 4}), out_dir / "baseline_fp_causes.csv")

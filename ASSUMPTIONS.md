@@ -370,7 +370,21 @@ recommended_tolerances.json, systemic_findings.csv).
 - **Trap table.** A false positive is any (invoice, error_type) flag with no matching error label, attributed
   to every trap the invoice carries, so traps that overlap (a BOL-noise invoice that is also on an amended
   lane) share their false positives; the columns are not additive. The last row is the same count on clean
-  invoices. `*_fp_by_type` says which rule raised them.
+  invoices. `*_fp_by_type` says which rule raised them. Because of the overlap it is kept as detail only: its
+  rows add up to more than the false flags, so it is not the table to quote.
+- **Baseline false-flag causes** (`outputs/baseline_fp_causes.csv`, `evaluate.baseline_fp_causes`). Each baseline false flag
+  is attributed to exactly one cause, so the causes add up to the baseline's false flags (an assertion checks it). The cause
+  comes from the rule that raised the flag and the invoice's trap and error labels. Precedence, first match wins:
+  (1) rate flag on an invoice carrying the `rate_amendment` trap; (2) rate or weight flag on an invoice carrying
+  `documented_reweigh`; (3) rate flag on an invoice with a `weight_overbilling` error label (one weight overbilling raises
+  both checks in a baseline that never separates weight from rate); (4) accessorial flag on an invoice carrying
+  `late_authorization`; (5) duplicate flag on a `rebill` or `balance_due` invoice; (6) phantom flag on an invoice with the
+  `bol_typo` trap or a `bol_format` trap in `zeros_dropped` mode (the other BOL formats are cleaned by the baseline, so they
+  cannot make a phantom); (7) anything else, `other`. Precedence only matters for rate flags, the one rule that can reach
+  (1), (2) and (3): an amended lane that was also reweighed counts as an amendment. The trap labels are per invoice, not
+  per line, so a late-authorization invoice's accessorial flag is credited to late authorization even if it was another
+  line that was authorized late. `other` is flags on resent duplicates, which copy an original's BOL trap labels and no
+  other, so their amended-lane or reweigh cause is not visible. *Change:* the precedence is code (`FP_CAUSES`, `fp_cause`), not config.
 - **Each sweep scores only the rule (and carrier mode) its tolerance governs**: `rate_pct` on
   rate_overcharge, `weight_pct` on weight_overbilling, `fsc_ltl_pp` on fsc_mismatch for LTL carriers, and
   `fsc_tl_pct` on fsc_mismatch for TL carriers. Scoring the whole engine would hide the change under the
@@ -501,10 +515,10 @@ Result numbers are not quoted here; the dashboard reads them from `outputs/` and
   estimate* is the sum of `recoverable_estimate` in `audit_invoice_summary.csv`; it equals the sum of the engine's
   counted dollars by error type, which the by-type chart shows.
 - **Systemic bullet** picks the finding with the smallest p-value in `systemic_findings.csv` and says how many other
-  patterns were flagged. It is not hard-coded to CARF. **Trap bullet** picks the trap with the most baseline false
-  flags, ignoring the clean-invoice row, and names the rule that raised most of them. The one clause explaining *why*
-  the baseline trips (for example, "ignores effective dates") is a fixed sentence per trap (`TRAP_WHY`) taken from the
-  baseline's documented shortcuts above; a trap without an entry gets no explanation. **Accrual bullet** uses the ALL
+  patterns were flagged. It is not hard-coded to CARF. **False-flag bullet** picks the cause with the most baseline false flags in `baseline_fp_causes.csv` (never `other`) and quotes
+its share of the additive total. The one clause explaining *why* the baseline trips (for example, "ignores effective dates") is a
+fixed sentence per cause (`CAUSE_WHY`) taken from the baseline's documented shortcuts above; a cause without an entry gets no
+explanation. The Audit quality tab charts the causes and keeps the overlapping trap table below it as detail. **Accrual bullet** uses the ALL
   rows of `accrual_accuracy.csv` and `accrual_sensitivity.csv`: the accessorial share is accessorial error over the
   net (signed) error, and the *late-authorization share* is the sensitivity's accrual change over the net error. Shares
   are of the net error over the whole period, so months of opposite sign net against each other; the mean absolute
@@ -570,7 +584,10 @@ Result numbers are not quoted here; read them from `outputs/summary.json`.
   `eval_by_mode.csv`; the remaining misses are listed by type and mode in `engine_misses.other_detail`. Missed dollars are
   answer-key dollars, not estimates, and are labeled that way.
 - **Baseline duplicate false flags "explained by" rebills and balance-due invoices** is the false duplicate flags attributed to
-  those two traps, divided by all false duplicate flags and capped at 100%, because traps overlap in `eval_traps.csv`.
+  the rebill / balance due cause in `baseline_fp_causes.csv`, divided by all false duplicate flags. (An earlier version summed the
+  per-trap counts from `eval_traps.csv` and capped the result at 100%, which hid the overlap.)
+- **False flags by cause in the README and WALKTHROUGH question 9** come from `baseline_fp_causes.csv` through `summary.json`
+  (`baseline_fp_causes`), not from the overlapping trap table.
 - **Accrual versus billed** (used in WALKTHROUGH question 6) is (accrual - `actual_billed`) / `actual_billed` over the same
   shipment-month population as the payable comparison. It is an estimate because the accrual is.
 - **README length** is at most 550 words of prose, not counting the results table or the code block; a test enforces it.

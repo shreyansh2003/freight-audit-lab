@@ -30,13 +30,14 @@ def styled(chart, title, height, pad_right=5):
                               padding=0, offset=4))
 
 
-def bar_by_category(df, category, value, title, fmt="$,.0f", height=None):
-    """Horizontal bars, largest first, value printed at the end of each bar (so no value axis)."""
+def bar_by_category(df, category, value, title, fmt="$,.0f", height=None, color=ACCENT, tip="Estimate"):
+    """Horizontal bars, largest first, value printed at the end of each bar (so no value axis).
+    `color` is grey for the baseline; `tip` names the value in the tooltip ("Estimate" for dollars, "False flags" for counts)."""
     base = alt.Chart(df).encode(y=alt.Y(f"{category}:N", sort=alt.EncodingSortField(value, order="descending"),
                                         title=None, axis=alt.Axis(ticks=False, domain=False, labelLimit=240)),
                                 x=alt.X(f"{value}:Q", axis=None, scale=alt.Scale(domain=[0, df[value].max() * 1.18])))
-    bars = base.mark_bar(color=ACCENT, cornerRadiusEnd=3, size=16).encode(
-        tooltip=[alt.Tooltip(f"{category}:N", title=None), alt.Tooltip(f"{value}:Q", format=fmt, title="Estimate")])
+    bars = base.mark_bar(color=color, cornerRadiusEnd=3, size=16).encode(
+        tooltip=[alt.Tooltip(f"{category}:N", title=None), alt.Tooltip(f"{value}:Q", format=fmt, title=tip)])
     labels = base.mark_text(align="left", dx=5, color=INK, fontSize=12).encode(text=alt.Text(f"{value}:Q", format=fmt))
     return styled(bars + labels, title, height or 30 * len(df) + 10, pad_right=LABEL_ROOM)
 

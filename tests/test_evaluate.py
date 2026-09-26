@@ -3,7 +3,8 @@
 import pandas as pd
 import pytest
 
-from freight_audit_lab.evaluate import (NO_TRAP, evaluate, load_labels, metrics, outcomes, write_evaluation)
+from freight_audit_lab.evaluate import (NO_TRAP, baseline_fp_causes, evaluate, fp_cause, load_labels, metrics, outcomes,
+                                        write_evaluation)
 
 CENT = 0.01
 LABEL_COLUMNS = ["invoice_id", "label_kind", "label", "mode", "true_dollar_impact"]
@@ -84,7 +85,40 @@ def test_outcomes_can_be_limited_to_a_scope_of_invoices():
 def test_outputs_are_written(tmp_path):
     write_evaluation(evaluate(ENGINE, BASELINE, LABELS), tmp_path)
     assert {p.name for p in tmp_path.iterdir()} == {"eval_by_type.csv", "eval_by_mode.csv", "eval_traps.csv",
-                                                   "eval_engine_vs_baseline.csv"}
+                                                   "eval_engine_vs_baseline.csv", "baseline_fp_causes.csv"}
+
+
+def test_each_false_flag_gets_one_cause_and_the_precedence_is_the_documented_one():
+    none = set()
+    assert fp_cause("rate_overcharge", {"rate_amendment", "documented_reweigh"}, {"weight_overbilling"}, False) == "rate_amendment"
+    assert fp_cause("rate_overcharge", {"documented_reweigh"}, {"weight_overbilling"}, False) == "reweigh"
+    assert fp_cause("rate_overcharge", {"bol_format"}, {"weight_overbilling"}, False) == "weight_misread_as_rate"
+    assert fp_cause("weight_overbilling", {"documented_reweigh", "rate_amendment"}, none, False) == "reweigh"
+    assert fp_cause("unauthorized_accessorial", {"late_authorization", "bol_format"}, none, False) == "late_authorization"
+    assert fp_cause("duplicate_invoice", {"balance_due"}, none, False) == "rebill_balance_due"
+    assert fp_cause("phantom_invoice", {"bol_typo"}, none, False) == "bol_typo_or_zero"
+    assert fp_cause("phantom_invoice", {"bol_format"}, none, True) == "bol_typo_or_zero"
+    # the rule that raised the flag matters: a late-authorization invoice's rate flag is not a late authorization
+    assert fp_cause("rate_overcharge", {"late_authorization"}, none, False) == "other"
+    assert fp_cause("phantom_invoice", {"bol_format"}, none, False) == "other"       # spaces, dashes, ... are cleaned by the baseline
+
+
+def test_cause_table_adds_up_to_the_false_flags_where_the_trap_table_double_counts():
+    labels = pd.concat([LABELS, pd.DataFrame([("I5", "trap", "bol_format", "spaces", 0.0),
+                                              ("I5", "trap", "documented_reweigh", "", 0.0)], columns=LABEL_COLUMNS)],
+                       ignore_index=True)
+    flags = pd.DataFrame([("I5", "rate_overcharge", 25.0, True), ("I4", "rate_overcharge", 10.0, True)], columns=FLAG_COLUMNS)
+    result = evaluate(ENGINE, flags, labels)
+    table = result["baseline_fp_causes"].set_index("cause")
+    assert table["false_flags"].sum() == 2 and table.loc["rate_amendment", "false_flags"] == 1 and table.loc["other", "false_flags"] == 1
+    assert table["share_of_false_flags"].sum() == pytest.approx(1.0)
+    traps = result["traps"].set_index("trap")                                    # I5 is counted under all three of its traps
+    assert sum(traps.loc[t, "baseline_fp"] for t in ("rate_amendment", "bol_format", "documented_reweigh")) == 3
+
+
+def test_cause_table_is_empty_but_well_formed_when_the_baseline_raises_no_false_flags():
+    table = baseline_fp_causes(LABELS, outcomes(ENGINE.iloc[0:1], LABELS))
+    assert table["false_flags"].sum() == 0 and list(table["cause"].iloc[-1:]) == ["other"] and table["share_of_false_flags"].eq(0).all()
 
 
 # ---------------------------------------------------------------- on the full generated data
@@ -116,6 +150,17 @@ def test_engine_beats_baseline_on_precision_and_leaves_traps_alone(scored):
     traps = result["traps"].set_index("trap")
     assert traps["engine_fp"].sum() <= 3 and traps["baseline_fp"].sum() > 100
     assert traps.loc[NO_TRAP, "engine_fp"] == 0
+
+
+def test_baseline_false_flag_causes_add_up_to_the_baseline_false_flags(scored):
+    """The trap table sums to more than the false flags (overlapping traps); the cause table must not."""
+    result, _ = scored
+    causes = result["baseline_fp_causes"]
+    total_fp = int(by_type(result, "baseline").loc["ALL", "fp"])
+    assert causes["false_flags"].sum() == total_fp
+    assert result["traps"]["baseline_fp"].sum() > total_fp                # the overlap the cause table removes
+    assert causes["share_of_false_flags"].sum() == pytest.approx(1.0, abs=1e-6)
+    assert causes["cause"].iloc[-1] == "other" and causes.loc[causes["cause"] == "bol_typo_or_zero", "false_flags"].iloc[0] > 0
 
 
 def test_flag_and_label_counts_reconcile_with_the_answer_key(scored):

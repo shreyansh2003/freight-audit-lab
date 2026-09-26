@@ -8,7 +8,7 @@ Three one-sentence findings about **method**, not about injected error rates. Ev
 > A careful spreadsheet baseline flagged 334 duplicate invoices and 60% of them were wrong; 100% of the wrong ones were rebills or balance-due invoices, which legitimately repeat the original invoice's BOL and which a BOL-only match cannot tell from a resend.
 
 - Numbers: 200 false duplicate flags out of 334 (59.9%); 100 on rebill invoices and 100 on balance-due invoices. The engine, which links a rebill to the invoice it replaces and treats a balance-due invoice as a different charge, raised 0 false duplicate flags.
-- Sources: `outputs/eval_by_type.csv` (duplicate_invoice rows), `outputs/eval_traps.csv` (rebill and balance_due rows).
+- Sources: `outputs/eval_by_type.csv` (duplicate_invoice rows), `outputs/baseline_fp_causes.csv` (the rebill / balance due cause).
 - Caveat: the baseline is deliberately given no supersession logic; the finding is about which rule closes the gap, not about spreadsheets being bad.
 
 ## 2. A per-invoice tolerance check cannot see a systemic fuel error; a peer-rate test can

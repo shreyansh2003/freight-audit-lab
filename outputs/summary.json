@@ -292,6 +292,70 @@
       "baseline_false_flags": 0
     }
   },
+  "baseline_fp_causes": {
+    "total": 1552,
+    "causes": {
+      "rate_amendment": {
+        "label": "rate amendment",
+        "false_flags": 554,
+        "share": 0.357,
+        "by_rule": {
+          "rate_overcharge": 554
+        }
+      },
+      "late_authorization": {
+        "label": "late authorization",
+        "false_flags": 353,
+        "share": 0.2274,
+        "by_rule": {
+          "unauthorized_accessorial": 353
+        }
+      },
+      "reweigh": {
+        "label": "reweigh",
+        "false_flags": 207,
+        "share": 0.1334,
+        "by_rule": {
+          "rate_overcharge": 88,
+          "weight_overbilling": 119
+        }
+      },
+      "rebill_balance_due": {
+        "label": "rebill / balance due",
+        "false_flags": 200,
+        "share": 0.1289,
+        "by_rule": {
+          "duplicate_invoice": 200
+        }
+      },
+      "weight_misread_as_rate": {
+        "label": "weight error misread as rate",
+        "false_flags": 155,
+        "share": 0.0999,
+        "by_rule": {
+          "rate_overcharge": 155
+        }
+      },
+      "bol_typo_or_zero": {
+        "label": "BOL typo or dropped leading zero",
+        "false_flags": 69,
+        "share": 0.0445,
+        "by_rule": {
+          "phantom_invoice": 69
+        }
+      },
+      "other": {
+        "label": "other",
+        "false_flags": 14,
+        "share": 0.009,
+        "by_rule": {
+          "rate_overcharge": 8,
+          "unauthorized_accessorial": 3,
+          "weight_overbilling": 3
+        }
+      }
+    }
+  },
   "baseline_duplicates": {
     "flags": 334,
     "false_flags": 200,

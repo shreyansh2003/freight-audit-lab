@@ -163,13 +163,17 @@ def audit_quality_tab(o):
         with side:
             show(charts.engine_vs_baseline_bars(long, "label", title, ".0%"))
 
-    st.markdown("### Where the baseline goes wrong: false flags by trap")
+    st.markdown("### Where the baseline goes wrong: false flags by cause")
+    causes = o["baseline_fp_causes"]
+    show(charts.bar_by_category(causes.assign(cause=causes["description"].str.capitalize()), "cause", "false_flags",
+                                "Baseline false flags by cause (each flag counted once, so the bars add up)", ",d",
+                                color=charts.GREY, tip="False flags"))
+    st.caption("Each false flag is attributed to one cause, using the rule that raised it and the first matching "
+               "reason in this order: rate amendment, reweigh, weight error misread as rate, late authorization, "
+               "rebill / balance due, BOL typo or dropped leading zero, other. \"Other\" is flags on resent "
+               "duplicates, which do not carry the trap labels of the invoice they copy.")
+    st.markdown("##### Detail: false flags by trap (an invoice with two traps counts under both)")
     traps = o["eval_traps"]
-    real = traps[~traps["trap"].str.startswith("(none")].sort_values("baseline_fp", ascending=False)
-    long = pd.concat([real[["trap", f"{s}_fp"]].rename(columns={f"{s}_fp": "value"}).assign(system=s.capitalize())
-                      for s in ("engine", "baseline")])
-    long["trap"] = long["trap"].str.replace("_", " ")
-    show(charts.engine_vs_baseline_bars(long, "trap", "False flags by trap (count of invoice and error-type flags)", ",d"))
     detail = traps.assign(trap=traps["trap"].str.replace("_", " "),
                           engine_fp_by_type=traps["engine_fp_by_type"].fillna(""),
                           baseline_fp_by_type=traps["baseline_fp_by_type"].fillna(""))
@@ -179,7 +183,8 @@ def audit_quality_tab(o):
         "Engine flags by rule": st.column_config.TextColumn(width="medium"),
         "Baseline flags by rule": st.column_config.TextColumn(width="large")})
     st.caption("A false flag is an (invoice, error type) flag with no matching injected error. Traps overlap, so the "
-               "columns are not additive. The last row is clean invoices, where neither system raises a false flag.")
+               "rows do not add up to the total; the chart above is the additive view. The last row is clean invoices, "
+               "where neither system raises a false flag.")
 
     st.markdown("### Tolerance sweep")
     picks = list(TOLERANCES)

@@ -1,0 +1,8 @@
+cause,description,false_flags,share_of_false_flags,by_rule
+rate_amendment,rate amendment,554,0.357,rate_overcharge:554
+late_authorization,late authorization,353,0.2274,unauthorized_accessorial:353
+reweigh,reweigh,207,0.1334,rate_overcharge:88;weight_overbilling:119
+rebill_balance_due,rebill / balance due,200,0.1289,duplicate_invoice:200
+weight_misread_as_rate,weight error misread as rate,155,0.0999,rate_overcharge:155
+bol_typo_or_zero,BOL typo or dropped leading zero,69,0.0445,phantom_invoice:69
+other,other,14,0.009,rate_overcharge:8;unauthorized_accessorial:3;weight_overbilling:3

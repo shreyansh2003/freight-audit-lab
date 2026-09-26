@@ -14,7 +14,7 @@ The baseline is a careful spreadsheet pass, not a strawman: same rules, toleranc
 | Engine | 99.9% | 89.7% | 1 |
 | Careful baseline | 41.9% | 89.5% | 1,552 |
 
-Recall is nearly the same; precision is not. A false flag is a dispute the carrier rejects: wasted analyst time and goodwill. The baseline's false flags by trap: rate amendments 622, late authorizations 391, BOL formatting 267, reweigh certificates 233, rebills 106, balance-due invoices 103. Almost none of it is string cleaning; the baseline does not know what the paper trail said at the time.
+Recall is nearly the same; precision is not. A false flag is a dispute the carrier rejects: wasted analyst time and goodwill. Its 1,552 false flags each have one cause: rate amendments 554, late authorizations 353, reweigh certificates 207, rebills and balance-due invoices 200, weight errors also flagged as rate errors 155, BOL typos or dropped zeros 69, other 14. Missing context, not string cleaning.
 
 ## Read the engine's numbers with care
 

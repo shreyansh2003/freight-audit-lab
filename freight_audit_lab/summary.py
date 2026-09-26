@@ -50,17 +50,19 @@ def engine_vs_baseline(ev):
     return {"overall": {s: scoring_block(overall, s) for s in SYSTEMS}, "by_type": by_type}
 
 
+def parse_counts(cell):
+    """'duplicate_invoice:100;phantom_invoice:3' -> {'duplicate_invoice': 100, 'phantom_invoice': 3}; a blank cell -> {}."""
+    return {} if pd.isna(cell) else {k: int(v) for k, v in (part.split(":") for part in cell.split(";"))}
+
+
 def trap_summary(traps):
     """False flags per trap for both systems, the baseline's by rule, and the clean-invoice row on its own."""
-    def parse(cell):
-        return {} if pd.isna(cell) else {k: int(v) for k, v in (part.split(":") for part in cell.split(";"))}
-
     out = {"traps": {}, "clean_invoices": {}}
     for row in traps.to_dict("records"):
         entry = {"invoices": int(row["n_invoices"]), "engine_false_flags": int(row["engine_fp"]),
                  "baseline_false_flags": int(row["baseline_fp"]),
-                 "engine_false_flags_by_type": parse(row["engine_fp_by_type"]),
-                 "baseline_false_flags_by_type": parse(row["baseline_fp_by_type"])}
+                 "engine_false_flags_by_type": parse_counts(row["engine_fp_by_type"]),
+                 "baseline_false_flags_by_type": parse_counts(row["baseline_fp_by_type"])}
         if row["trap"].startswith("(none"):
             out["clean_invoices"] = {k: entry[k] for k in ("invoices", "engine_false_flags", "baseline_false_flags")}
         else:
@@ -68,16 +70,28 @@ def trap_summary(traps):
     return out
 
 
-def baseline_duplicates(by_type, trap_block):
+def fp_cause_summary(causes):
+    """The baseline's false flags with one cause each (baseline_fp_causes.csv): {"total": n, "causes": {key: {...}}}.
+    The causes add up to `total`, unlike the trap table, where an invoice with two traps is counted under both."""
+    return {"total": int(causes["false_flags"].sum()),
+            "causes": {r["cause"]: {"label": r["description"], "false_flags": int(r["false_flags"]),
+                                    "share": float(r["share_of_false_flags"]), "by_rule": parse_counts(r["by_rule"])}
+                       for r in causes.to_dict("records")}}
+
+
+def baseline_duplicates(by_type, trap_block, cause_block):
     """How many of the baseline's duplicate flags were wrong, and how many of those came from rebills and
-    balance-due invoices (a rebill and its original, or a balance-due invoice and its original, share a BOL)."""
+    balance-due invoices (a rebill and its original, or a balance-due invoice and its original, share a BOL).
+    The two per-trap counts cannot overlap (an invoice is a rebill or a balance-due, never both); the share is
+    the duplicate false flags attributed to the rebill / balance-due cause, so it cannot exceed 100%."""
     row = by_type[(by_type["system"] == "baseline") & (by_type["error_type"] == "duplicate_invoice")].iloc[0]
     from_trap = {t: trap_block["traps"][t]["baseline_false_flags_by_type"].get("duplicate_invoice", 0)
                  for t in ("rebill", "balance_due")}
     false_flags = int(row["fp"])
     return {"flags": int(row["flags"]), "false_flags": false_flags, "false_share": _ratio(false_flags, row["flags"]),
             "false_from_rebills": from_trap["rebill"], "false_from_balance_due": from_trap["balance_due"],
-            "share_explained_by_rebills_and_balance_due": min(1.0, _ratio(sum(from_trap.values()), false_flags))}
+            "share_explained_by_rebills_and_balance_due": _ratio(
+                cause_block["causes"]["rebill_balance_due"]["by_rule"].get("duplicate_invoice", 0), false_flags)}
 
 
 def engine_misses(by_type, by_mode):
@@ -151,13 +165,14 @@ def build_summary(cfg, out_dir=OUTPUT_DIR, data_dir=REPO_ROOT / "data"):
     """Assemble the summary dict from outputs/ (plus the normalized invoice table for counts and ship dates)."""
     o = {name: read_csv(out_dir / f"{name}.csv") for name in [
         "audit_invoice_summary", "audit_flags", "eval_engine_vs_baseline", "eval_by_type", "eval_by_mode", "eval_traps",
-        "systemic_findings", "accrual_accuracy", "accrual_sensitivity", "exception_queue"]}
+        "baseline_fp_causes", "systemic_findings", "accrual_accuracy", "accrual_sensitivity", "exception_queue"]}
     invoices = read_csv(data_dir / "normalized" / "invoices.csv")
     recommended = json.loads((out_dir / "recommended_tolerances.json").read_text())
     audited = o["audit_invoice_summary"]
     billed, recoverable = float(audited["total"].sum()), float(audited["recoverable_estimate"].sum())
     ev = engine_vs_baseline(o["eval_engine_vs_baseline"])
     traps = trap_summary(o["eval_traps"])
+    causes = fp_cause_summary(o["baseline_fp_causes"])
     return {
         "synthetic_data": True,
         "seed": cfg["seed"],
@@ -170,7 +185,8 @@ def build_summary(cfg, out_dir=OUTPUT_DIR, data_dir=REPO_ROOT / "data"):
                         "by_error_type_estimate": {t: v["engine"]["flagged_dollars_estimate"] for t, v in ev["by_type"].items()}},
         "engine_vs_baseline": ev,
         "traps": traps,
-        "baseline_duplicates": baseline_duplicates(o["eval_by_type"], traps),
+        "baseline_fp_causes": causes,
+        "baseline_duplicates": baseline_duplicates(o["eval_by_type"], traps, causes),
         "engine_misses": engine_misses(o["eval_by_type"], o["eval_by_mode"]),
         "systemic": systemic_block(o["systemic_findings"], o["audit_flags"], invoices,
                                    {c["id"]: c["name"] for c in cfg["carriers"]}),

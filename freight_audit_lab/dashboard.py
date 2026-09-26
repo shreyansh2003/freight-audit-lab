@@ -15,20 +15,21 @@ import pandas as pd
 from freight_audit_lab.audit.engine import OUTPUT_DIR
 from freight_audit_lab.csv_io import read_csv
 
-OUTPUT_FILES = ["audit_invoice_summary", "eval_by_type", "eval_engine_vs_baseline", "eval_traps", "exception_queue",
+OUTPUT_FILES = ["audit_invoice_summary", "eval_by_type", "eval_engine_vs_baseline", "eval_traps", "baseline_fp_causes", "exception_queue",
                 "sweep", "systemic_findings", "accrual_accuracy", "accrual_sensitivity", "journal_entries"]
 
 ERROR_LABELS = {"duplicate_invoice": "Duplicate invoice", "phantom_invoice": "Phantom invoice",
                 "rate_overcharge": "Rate overcharge", "fsc_mismatch": "Fuel surcharge mismatch",
                 "unauthorized_accessorial": "Unauthorized accessorial", "weight_overbilling": "Weight overbilling"}
 
-# Why the naive baseline trips on each trap. These describe the baseline's shortcuts (ASSUMPTIONS.md, Stage 4)
-# and carry no numbers; a trap missing here just gets no explanation in the finding.
-TRAP_WHY = {"rate_amendment": "it prices every shipment at the first rate row and ignores effective dates",
-            "balance_due": "it treats a balance-due invoice as a copy of the original",
-            "rebill": "it audits the superseded original as well as its rebill",
-            "documented_reweigh": "it ignores reweigh certificates",
-            "late_authorization": "it asks whether an accessorial was authorized as of the invoice date"}
+# Why the naive baseline raises a false flag for each cause. These describe the baseline's shortcuts (ASSUMPTIONS.md,
+# Stage 4) and carry no numbers; a cause missing here just gets no explanation in the finding.
+CAUSE_WHY = {"rate_amendment": "it prices every shipment at the first rate row and ignores effective dates",
+             "reweigh": "it ignores reweigh certificates, so a certified heavier weight looks overbilled",
+             "weight_misread_as_rate": "it does not separate weight from rate, so one weight overbilling is also flagged as a rate overcharge",
+             "late_authorization": "it asks whether an accessorial was authorized as of the invoice date",
+             "rebill_balance_due": "it treats a rebill or a balance-due invoice as a copy of the original",
+             "bol_typo_or_zero": "it cannot match a BOL with a typo or dropped leading zeros, so it calls the invoice a phantom"}
 
 
 def outputs_ready(out_dir=OUTPUT_DIR):
@@ -137,18 +138,17 @@ def systemic_finding_text(o, carrier_names):
 
 
 def trap_finding_text(o):
-    """Bullet 2: the trap that caused the most baseline false positives, and how the engine did on it."""
-    traps = o["eval_traps"]
-    traps = traps[~traps["trap"].str.startswith("(none")]
-    worst = traps.sort_values("baseline_fp", ascending=False).iloc[0]
-    name = worst["trap"].replace("_", " ")
-    by_type = (part.split(":") for part in worst["baseline_fp_by_type"].split(";"))
-    top_type = max(by_type, key=lambda kv: int(kv[1]))
-    why = TRAP_WHY.get(worst["trap"])
+    """Bullet 2: the cause behind the most baseline false flags. Each false flag has exactly one cause
+    (baseline_fp_causes.csv), so the counts add up; "other" is never named as the top cause."""
+    causes = o["baseline_fp_causes"]
+    total = int(causes["false_flags"].sum())
+    top = causes[causes["cause"] != "other"].sort_values("false_flags", ascending=False, kind="stable").iloc[0]
+    why = CAUSE_WHY.get(top["cause"])
     why = f": {why}" if why else ""
-    return (f"**The {name} trap fooled the baseline most.** It raised {int(worst['baseline_fp']):,} false flags across "
-            f"{int(worst['n_invoices']):,} such invoices ({top_type[1]} of them {error_label(top_type[0]).lower()} flags){why}. "
-            f"The engine raised {int(worst['engine_fp'])}.")
+    engine_fp = int(o["eval_engine_vs_baseline"].set_index("error_type").loc["ALL", "engine_fp"])
+    return (f"**{top['description'].capitalize()} caused the most baseline false flags.** {int(top['false_flags']):,} of "
+            f"its {total:,} false flags ({pct(top['false_flags'] / total, 0)}), each counted under one cause only{why}. "
+            f"The engine raised {engine_fp} false flags in total.")
 
 
 def accrual_finding_text(o):
@@ -175,5 +175,5 @@ def accrual_finding_text(o):
 
 
 def key_findings(o, carrier_names):
-    """The three bullets for the Overview tab, in order: systemic finding, worst trap, accrual drivers."""
+    """The three bullets for the Overview tab, in order: systemic finding, top false-flag cause, accrual drivers."""
     return [systemic_finding_text(o, carrier_names), trap_finding_text(o), accrual_finding_text(o)]

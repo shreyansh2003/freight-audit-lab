@@ -34,6 +34,10 @@ def small():
             "trap": ["rebill", "rate_amendment", "(none: clean invoice)"], "n_invoices": [100, 1000, 5000],
             "engine_fp": [0, 2, 0], "baseline_fp": [106, 622, 0],
             "baseline_fp_by_type": ["duplicate_invoice:100;rate_overcharge:6", "rate_overcharge:554;weight_overbilling:68", None]}),
+        "baseline_fp_causes": pd.DataFrame({
+            "cause": ["rate_amendment", "late_authorization", "other"],
+            "description": ["rate amendment", "late authorization", "other"],
+            "false_flags": [554, 300, 46], "share_of_false_flags": [0.6156, 0.3333, 0.0511]}),
         "systemic_findings": pd.DataFrame({
             "carrier_id": ["CARA", "CARF"], "error_type": ["weight_overbilling", "fsc_mismatch"],
             "window_start": [ts("2025-01-01"), ts("2025-08-01")], "window_end": [ts("2025-03-31"), ts("2025-10-31")],
@@ -72,10 +76,12 @@ def test_systemic_bullet_picks_the_smallest_p_value_and_mentions_the_others(smal
     assert "No systemic" in systemic_finding_text(dict(small, systemic_findings=small["systemic_findings"].iloc[0:0]), NAMES)
 
 
-def test_trap_bullet_names_the_worst_trap_ignores_clean_invoices_and_gives_the_top_rule(small):
+def test_false_flag_bullet_names_the_top_cause_out_of_the_additive_total_and_never_names_other(small):
     text = trap_finding_text(small)
-    assert "rate amendment trap" in text and "622 false flags across 1,000 such invoices" in text
-    assert "554 of them rate overcharge flags" in text and "ignores effective dates" in text and "The engine raised 2." in text
+    assert "Rate amendment caused the most baseline false flags" in text and "554 of its 900 false flags (62%)" in text
+    assert "ignores effective dates" in text and "The engine raised 1 false flags in total." in text
+    small["baseline_fp_causes"].loc[2, "false_flags"] = 5000                    # "other" larger than every named cause
+    assert "Rate amendment caused" in trap_finding_text(small)
 
 
 def test_accrual_bullet_shares_are_of_the_net_error(small):
