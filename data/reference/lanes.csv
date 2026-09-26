@@ -1,0 +1,61 @@
+lane_id,origin_id,origin_city,origin_state,destination_id,destination_city,destination_state,miles
+L001,FAC01,Chicago,IL,DST04,Charlotte,NC,705
+L002,FAC01,Chicago,IL,DST05,Miami,FL,1430
+L003,FAC01,Chicago,IL,DST06,Orlando,FL,1183
+L004,FAC01,Chicago,IL,DST07,Nashville,TN,477
+L005,FAC01,Chicago,IL,DST08,Detroit,MI,284
+L006,FAC01,Chicago,IL,DST10,St. Louis,MO,315
+L007,FAC01,Chicago,IL,DST12,Denver,CO,1102
+L008,FAC01,Chicago,IL,DST14,Phoenix,AZ,1742
+L009,FAC01,Chicago,IL,DST16,Seattle,WA,2079
+L010,FAC01,Chicago,IL,DST17,Salt Lake City,UT,1508
+L011,FAC01,Chicago,IL,DST18,Indianapolis,IN,198
+L012,FAC01,Chicago,IL,DST20,Louisville,KY,323
+L013,FAC02,Atlanta,GA,DST02,Philadelphia,PA,798
+L014,FAC02,Atlanta,GA,DST03,Boston,MA,1123
+L015,FAC02,Atlanta,GA,DST07,Nashville,TN,257
+L016,FAC02,Atlanta,GA,DST08,Detroit,MI,717
+L017,FAC02,Atlanta,GA,DST09,Minneapolis,MN,1090
+L018,FAC02,Atlanta,GA,DST10,St. Louis,MO,561
+L019,FAC02,Atlanta,GA,DST11,Kansas City,MO,811
+L020,FAC02,Atlanta,GA,DST12,Denver,CO,1452
+L021,FAC02,Atlanta,GA,DST13,Houston,TX,841
+L022,FAC02,Atlanta,GA,DST14,Phoenix,AZ,1906
+L023,FAC02,Atlanta,GA,DST18,Indianapolis,IN,513
+L024,FAC02,Atlanta,GA,DST19,Pittsburgh,PA,626
+L025,FAC02,Atlanta,GA,DST20,Louisville,KY,384
+L026,FAC03,Dallas,TX,DST02,Philadelphia,PA,1557
+L027,FAC03,Dallas,TX,DST03,Boston,MA,1859
+L028,FAC03,Dallas,TX,DST04,Charlotte,NC,1114
+L029,FAC03,Dallas,TX,DST05,Miami,FL,1333
+L030,FAC03,Dallas,TX,DST08,Detroit,MI,1199
+L031,FAC03,Dallas,TX,DST10,St. Louis,MO,657
+L032,FAC03,Dallas,TX,DST11,Kansas City,MO,545
+L033,FAC03,Dallas,TX,DST14,Phoenix,AZ,1061
+L034,FAC03,Dallas,TX,DST15,Los Angeles,CA,1485
+L035,FAC03,Dallas,TX,DST16,Seattle,WA,2015
+L036,FAC03,Dallas,TX,DST19,Pittsburgh,PA,1283
+L037,FAC03,Dallas,TX,DST20,Louisville,KY,871
+L038,FAC04,Columbus,OH,DST01,New York,NY,571
+L039,FAC04,Columbus,OH,DST03,Boston,MA,771
+L040,FAC04,Columbus,OH,DST05,Miami,FL,1193
+L041,FAC04,Columbus,OH,DST07,Nashville,TN,400
+L042,FAC04,Columbus,OH,DST08,Detroit,MI,197
+L043,FAC04,Columbus,OH,DST09,Minneapolis,MN,753
+L044,FAC04,Columbus,OH,DST10,St. Louis,MO,475
+L045,FAC04,Columbus,OH,DST11,Kansas City,MO,743
+L046,FAC04,Columbus,OH,DST14,Phoenix,AZ,1996
+L047,FAC04,Columbus,OH,DST15,Los Angeles,CA,2368
+L048,FAC04,Columbus,OH,DST16,Seattle,WA,2410
+L049,FAC04,Columbus,OH,DST17,Salt Lake City,UT,1818
+L050,FAC04,Columbus,OH,DST18,Indianapolis,IN,202
+L051,FAC04,Columbus,OH,DST19,Pittsburgh,PA,195
+L052,FAC04,Columbus,OH,DST20,Louisville,KY,227
+L053,FAC05,Memphis,TN,DST03,Boston,MA,1362
+L054,FAC05,Memphis,TN,DST04,Charlotte,NC,624
+L055,FAC05,Memphis,TN,DST06,Orlando,FL,820
+L056,FAC05,Memphis,TN,DST07,Nashville,TN,236
+L057,FAC05,Memphis,TN,DST10,St. Louis,MO,289
+L058,FAC05,Memphis,TN,DST13,Houston,TX,581
+L059,FAC05,Memphis,TN,DST16,Seattle,WA,2236
+L060,FAC05,Memphis,TN,DST19,Pittsburgh,PA,791

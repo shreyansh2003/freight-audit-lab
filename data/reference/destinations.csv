@@ -1,0 +1,21 @@
+destination_id,city,state,lat,lon
+DST01,New York,NY,40.71,-74.01
+DST02,Philadelphia,PA,39.95,-75.17
+DST03,Boston,MA,42.36,-71.06
+DST04,Charlotte,NC,35.23,-80.84
+DST05,Miami,FL,25.76,-80.19
+DST06,Orlando,FL,28.54,-81.38
+DST07,Nashville,TN,36.16,-86.78
+DST08,Detroit,MI,42.33,-83.05
+DST09,Minneapolis,MN,44.98,-93.27
+DST10,St. Louis,MO,38.63,-90.2
+DST11,Kansas City,MO,39.1,-94.58
+DST12,Denver,CO,39.74,-104.99
+DST13,Houston,TX,29.76,-95.37
+DST14,Phoenix,AZ,33.45,-112.07
+DST15,Los Angeles,CA,34.05,-118.24
+DST16,Seattle,WA,47.61,-122.33
+DST17,Salt Lake City,UT,40.76,-111.89
+DST18,Indianapolis,IN,39.77,-86.16
+DST19,Pittsburgh,PA,40.44,-79.99
+DST20,Louisville,KY,38.25,-85.76

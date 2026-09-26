@@ -1,0 +1,147 @@
+seed: 42
+
+period:
+  start: 2025-01-01
+  months: 12
+  runoff_days: 90
+  audit_as_of: 2026-03-31
+
+network:
+  n_origins: 5            # each origin facility is a cost center
+  n_destinations: 20
+  n_lanes: 60
+  circuity_factor: 1.2
+
+carriers:                  # invented names; format = invoice file layout
+  - {id: CARA, name: "Carrier A Freight", mode: LTL, format: A, lag_median_days: 10, error_multiplier: 1.0,
+     name_variants: ["CARRIER A FREIGHT", "Carrier A Freight LLC", "Carr A Frt"]}
+  - {id: CARB, name: "Carrier B Lines",   mode: LTL, format: B, lag_median_days: 14, error_multiplier: 0.7,
+     name_variants: ["CARRIER B LINES", "Carrier B Lines Inc"]}
+  - {id: CARC, name: "Carrier C Express", mode: LTL, format: C, lag_median_days: 8,  error_multiplier: 1.4,
+     name_variants: ["CARRIER C EXPRESS", "Carrier C Exp.", "C Express"]}
+  - {id: CARD, name: "Carrier D Transport", mode: LTL, format: D, lag_median_days: 18, error_multiplier: 1.0,
+     name_variants: ["CARRIER D TRANSPORT", "Carrier D Trans"]}
+  - {id: CARE, name: "Carrier E Freightways", mode: LTL, format: A, lag_median_days: 12, error_multiplier: 0.8,
+     name_variants: ["CARRIER E FREIGHTWAYS", "Carrier E Fwy"]}
+  - {id: CARF, name: "Carrier F Trucking", mode: TL, format: B, lag_median_days: 9,  error_multiplier: 1.0,
+     name_variants: ["CARRIER F TRUCKING", "Carrier F Trkg"]}
+  - {id: CARG, name: "Carrier G Logistics", mode: TL, format: C, lag_median_days: 15, error_multiplier: 1.2,
+     name_variants: ["CARRIER G LOGISTICS", "Carrier G Log."]}
+  - {id: CARH, name: "Carrier H Carriers", mode: TL, format: D, lag_median_days: 20, error_multiplier: 0.9,
+     name_variants: ["CARRIER H CARRIERS", "Carrier H"]}
+carriers_per_lane: {LTL: 2, TL: 1}
+
+shipments:
+  n: 10000
+  tl_share: 0.20
+  ltl_weight_lbs: {median: 1200, sigma: 0.8, min: 100, max: 7500}
+  tl_weight_lbs: {min: 15000, max: 42000}
+  monthly_weights: [0.07, 0.07, 0.08, 0.08, 0.09, 0.09, 0.08, 0.08, 0.09, 0.09, 0.09, 0.09]
+  miles_per_day: {LTL: 450, TL: 550}
+  transit_extra_days: [0, 1]       # added to ceil(miles / miles_per_day)
+
+rates:
+  ltl:
+    base_cwt: {intercept: 8.0, per_mile: 0.035}   # $/cwt for the 1,000-1,999 lb break
+    weight_breaks:
+      - {min: 0,    max: 499,  mult: 1.35}
+      - {min: 500,  max: 999,  mult: 1.15}
+      - {min: 1000, max: 1999, mult: 1.00}
+      - {min: 2000, max: 4999, mult: 0.85}
+      - {min: 5000, max: 7500, mult: 0.72}
+    min_charge: 110.0
+    deficit_weight_rating: true     # charge the lower of as-weight and next-break minimum (see ASSUMPTIONS)
+  tl: {rate_per_mile: 2.25, min_charge: 450.0}
+  carrier_factor_range: [0.90, 1.10]
+  lane_noise_range: [0.95, 1.05]
+  amendments: {share_of_carrier_lanes: 0.20, effective_date: 2025-07-01, change_range: [-0.06, 0.08]}
+  open_ended_to: 2099-12-31         # effective_to for rate rows with no end
+
+diesel:
+  source: synthetic                     # synthetic | eia_csv
+  eia_csv_path: data/public/eia_diesel_weekly.csv
+  lead_weeks: 4                         # weeks of diesel before period start
+  price_decimals: 3                     # EIA publishes to 3 decimals
+  synthetic: {start_price: 3.65, weekly_sd: 0.05, mean_reversion: 0.05, long_run_mean: 3.80, min: 3.25, max: 5.75}
+  shock: {enabled: true, start: 2025-09-01, weeks_up: 6, total_rise: 0.60, weeks_down: 12}
+
+fsc:
+  reference_week: ship_week
+  ltl: {base_price: 1.20, step: 0.10, pct_per_step: 0.009}   # ~23% at $3.70, ~32% at $4.80
+  tl:  {peg_price: 1.25, mpg: 6.0}                           # ~$0.41/mi at $3.70
+
+accessorials:
+  ltl:
+    liftgate:    {prob: 0.12, amount: 95.0}
+    residential: {prob: 0.06, amount: 125.0}
+  tl:
+    detention:   {prob: 0.10, hourly: 75.0, free_hours: 2, max_hours: 6}
+  late_authorization_share: 0.25
+
+invoicing:
+  lag_sigma: 0.6
+  max_lag_days: 80
+  receipt_delay_days: [0, 5]
+
+errors:                    # share of eligible original invoices (phantom: share of shipments)
+  duplicate_invoice: 0.015
+  rate_overcharge: 0.03
+  fsc_mismatch: 0.025
+  unauthorized_accessorial: 0.02
+  weight_overbilling: 0.03
+  phantom_invoice: 0.005
+  sub_tolerance_share: 0.15
+  magnitudes:
+    rate_markup: [0.03, 0.15]
+    rate_sub_tolerance: [0.002, 0.008]
+    weight_inflation: [0.05, 0.30]
+    weight_sub_tolerance: [0.003, 0.015]
+    fsc_wrong_week_offset: [1, 3]
+    fsc_wrong_steps: [1, 3]
+  systemic_issues:
+    - {carrier: CARF, error_type: fsc_mismatch, mode: wrong_week, start: 2025-08-01, end: 2025-10-31, rate: 0.5}
+
+traps:
+  rebill_share: 0.01
+  balance_due_share: 0.01
+  reweigh_share_ltl: 0.015
+  reweigh_factor_range: [1.05, 1.20]   # certified weight = shipment weight x U(range)
+  bol_format_noise_share: 0.15
+  bol_typo_share: 0.003
+  rounding_noise_share: 0.10
+  rounding_noise_pct: 0.004
+
+normalization:
+  charge_code_map:
+    "FUEL SURCHARGE": FSC
+    "LIFTGATE SERVICE": LIFTGATE
+    "RESIDENTIAL DELIVERY": RESIDENTIAL
+    "DETENTION - DRIVER": DETENTION
+    "LINEHAUL": LH
+  fallback_match: {ship_date_days: 1, weight_pct: 0.02}
+
+audit:
+  tolerances:
+    duplicate_amount: 1.00
+    duplicate_window_days: 120
+    rate_pct: 0.01
+    rate_abs: 2.00
+    fsc_ltl_pp: 0.25          # percentage points
+    fsc_min_dollars: 1.00
+    fsc_tl_abs: 2.00
+    weight_pct: 0.02
+
+evaluation:
+  sweep:
+    rate_pct:   [0.0, 0.0025, 0.005, 0.01, 0.02, 0.03, 0.05]
+    fsc_ltl_pp: [0.0, 0.1, 0.25, 0.5, 1.0, 2.0]
+    weight_pct: [0.0, 0.005, 0.01, 0.02, 0.03, 0.05]
+  min_precision: 0.90
+  review_minutes_per_flag: 6       # ESTIMATE
+  analyst_cost_per_hour: 45.0      # ESTIMATE, loaded cost
+  false_dispute_cost: 25.0         # ESTIMATE, carrier friction per wrong dispute
+
+accruals:
+  trailing_days: 90
+  default_accessorial_per_shipment: {LTL: 12.0, TL: 8.0}
+  accounts: {expense: "6100 Freight Expense", liability: "2150 Accrued Freight"}

@@ -1,0 +1,9 @@
+carrier_id,carrier_name,mode,invoice_format
+CARA,Carrier A Freight,LTL,A
+CARB,Carrier B Lines,LTL,B
+CARC,Carrier C Express,LTL,C
+CARD,Carrier D Transport,LTL,D
+CARE,Carrier E Freightways,LTL,A
+CARF,Carrier F Trucking,TL,B
+CARG,Carrier G Logistics,TL,C
+CARH,Carrier H Carriers,TL,D
