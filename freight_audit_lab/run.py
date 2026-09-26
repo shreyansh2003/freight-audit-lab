@@ -4,7 +4,8 @@ Stages 1-2: generate reference data, invoices, raw carrier files, and the answer
 Stage 3: normalize the raw files and match invoices to shipments.
 Stage 4: re-rate against the contract, audit with the rules, run the naive baseline.
 Stage 5: score against the answer key, sweep tolerances, build the exception queue and disputes.
-Stage 6: month-end accruals, journal entries, and accrual accuracy.
+Stage 6: month-end accruals, journal entries, accrual accuracy, and the late-authorization sensitivity.
+(Stage 7, the dashboard, reads outputs/: streamlit run streamlit_app.py)
 """
 
 import time
@@ -105,6 +106,8 @@ def main():
           f"{len(accruals['journal_entries'])} journal lines)")
     print(f"  accrual vs payable (estimates): error {total['error_pct_estimate']:+.2%} overall, "
           f"MAPE {headline['mape_pct_estimate']:.2%}, bias {headline['bias_pct_estimate']:+.2%}")
+    what_if = accruals["sensitivity"].iloc[-1]
+    print(f"  if every authorization were recorded at delivery (estimate): error {what_if['error_pct_estimate_auth_at_delivery']:+.2%} overall")
 
 
 def print_flag_comparison(engine, baseline):

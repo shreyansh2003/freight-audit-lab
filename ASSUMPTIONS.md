@@ -485,3 +485,37 @@ Result numbers are not quoted here; read them from `outputs/accrual_accuracy.csv
   scenario accrual minus the built accrual. The table gives error and error % overall and for accessorials
   alone, as built and in the scenario, for each month and an ALL row. *Change:* `accessorials.late_authorization_share`
   sets how much paperwork is late in the generated data.
+
+
+## Dashboard (Stage 7)
+
+Result numbers are not quoted here; the dashboard reads them from `outputs/` and so should you.
+
+- **Every number on the Overview tab is a sum, ratio or lookup over an output file** (`freight_audit_lab/dashboard.py`),
+  and the three "Key findings" bullets are templates filled from those files, so a rerun changes the page with no
+  edit. *Billed spend* is what the audited (non-superseded) invoices billed, duplicates and balance-due invoices
+  included (`audit_invoice_summary.csv`). *False disputes avoided* is the baseline's false positives minus the
+  engine's, at the (invoice, error type) level, from the ALL row of `eval_engine_vs_baseline.csv`. *Recoverable
+  estimate* is the sum of `recoverable_estimate` in `audit_invoice_summary.csv`; it equals the sum of the engine's
+  counted dollars by error type, which the by-type chart shows.
+- **Systemic bullet** picks the finding with the smallest p-value in `systemic_findings.csv` and says how many other
+  patterns were flagged. It is not hard-coded to CARF. **Trap bullet** picks the trap with the most baseline false
+  flags, ignoring the clean-invoice row, and names the rule that raised most of them. The one clause explaining *why*
+  the baseline trips (for example, "ignores effective dates") is a fixed sentence per trap (`TRAP_WHY`) taken from the
+  baseline's documented shortcuts above; a trap without an entry gets no explanation. **Accrual bullet** uses the ALL
+  rows of `accrual_accuracy.csv` and `accrual_sensitivity.csv`: the accessorial share is accessorial error over the
+  net (signed) error, and the *late-authorization share* is the sensitivity's accrual change over the net error. Shares
+  are of the net error over the whole period, so months of opposite sign net against each other; the mean absolute
+  monthly error is quoted next to it. The headline wording ("Accessorials drive...") switches to linehaul and fuel if
+  accessorials are not most of the net error.
+- **The Data & assumptions tab is the one place that reads outside `outputs/`**: the normalization report and exceptions
+  (`data/normalized/`), the diesel series (`data/reference/diesel_weekly.csv`) and `config.yaml`. They are pipeline
+  inputs and diagnostics, not results. Carrier names come from `config.yaml`. The dashboard never reads
+  `data/ground_truth/`.
+- **Sweep chart.** One tolerance at a time, x-axis in the tolerance's own unit (percent, or percentage points for the
+  LTL fuel check), points equally spaced whatever the grid gaps. A ring marks the current setting and the recommended
+  one (often the same point, because of the materiality rule); the dashed line is `evaluation.min_precision`. The
+  caption is the rationale text from `recommended_tolerances.json`.
+- **Deploying.** `outputs/` is committed, so Streamlit Community Cloud serves it as is; if `outputs/` is missing the
+  app runs the full pipeline once behind a spinner. Colours are one accent plus greys (light theme set in
+  `.streamlit/config.toml`); engine and "as built" are the accent, baseline and what-if are grey.
