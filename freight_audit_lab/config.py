@@ -60,7 +60,8 @@ REQUIRED_KEYS = [
     "evaluation.sweep.fsc_tl_pct", "evaluation.min_precision", "evaluation.review_minutes_per_flag",
     "evaluation.analyst_cost_per_hour", "evaluation.false_dispute_cost",
     "evaluation.systemic.window_months", "evaluation.systemic.multiple",
-    "evaluation.systemic.min_invoices", "evaluation.systemic.min_flags", "evaluation.top_n_invoices",
+    "evaluation.systemic.min_invoices", "evaluation.systemic.min_flags", "evaluation.systemic.alpha",
+    "evaluation.min_material_gain", "evaluation.top_n_invoices",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",

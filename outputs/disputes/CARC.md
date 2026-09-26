@@ -31,4 +31,4 @@ An invoice with several flags is counted under each type.
 
 ## Systemic pattern check
 
-- Possible systemic issue: billed weight above the reference weight on 5% of invoices shipped Feb-Apr 2025 (19 of 368) (on average 18.5% above expected) vs 2% across other LTL carriers. Request the weight and inspection documents.
+- Possible systemic issue: billed weight above the reference weight on 5% of invoices shipped Jan-Mar 2025 (16 of 346) (on average 20.2% above expected) vs 1% across other LTL carriers (one-sided binomial p = 1.6e-05, below the Bonferroni-adjusted threshold 2.1e-05). Request the weight and inspection documents.

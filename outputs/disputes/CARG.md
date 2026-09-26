@@ -30,4 +30,4 @@ An invoice with several flags is counted under each type.
 
 ## Systemic pattern check
 
-- Possible systemic issue: linehaul billed above contract on 7% of invoices shipped Jun-Aug 2025 (11 of 169) (on average 7.4% above expected) vs 1% across other TL carriers. Request the rate table the carrier is billing from and corrected invoices.
+No error type stands out from the other carriers' rate in any rolling 3-month window.

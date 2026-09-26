@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 
 from freight_audit_lab.audit.engine import audit
-from freight_audit_lab.exceptions import (build_disputes, build_exception_queue, systemic_findings, systemic_line,
-                                          write_exceptions)
+from freight_audit_lab.exceptions import (binomial_sf, build_disputes, build_exception_queue, systemic_findings,
+                                          systemic_line, write_exceptions)
 from tests.fixtures import audit_inputs, invoice, make_cfg
 
 CENT = 0.01
@@ -84,7 +84,8 @@ def test_systemic_check_fires_on_a_concentrated_pattern():
     assert row.other_carriers_rate == pytest.approx(1 / 30)
     line = systemic_line(row)
     assert "60% of invoices shipped Aug-Oct 2025 (54 of 90)" in line and "3% across other LTL carriers" in line
-    assert "10.0% above expected" in line
+    assert "10.0% above expected" in line and "one-sided binomial p = " in line and "Bonferroni" in line
+    assert row.p_value < row.alpha_adjusted and row.alpha_adjusted == pytest.approx(0.01 / (3 * 6 * 10))   # 3 carriers x 6 types x 10 windows
 
 
 def test_systemic_check_stays_quiet_when_flags_are_uniform_or_only_mildly_higher():
@@ -92,6 +93,27 @@ def test_systemic_check_stays_quiet_when_flags_are_uniform_or_only_mildly_higher
     assert systemic_findings(uniform, flags, make_cfg()).empty
     mild, flags = world(lambda c, m: 4 if c == "CARA" else 2)          # 2x the others, under the 3x rule
     assert systemic_findings(mild, flags, make_cfg()).empty
+
+
+def test_binomial_tail_matches_hand_calculations():
+    assert binomial_sf(2, 3, 0.5) == pytest.approx(0.5)                    # (3 + 1) / 8
+    assert binomial_sf(10, 10, 0.5) == pytest.approx(1 / 1024)
+    assert binomial_sf(1, 4, 0.25) == pytest.approx(1 - 0.75 ** 4)
+    assert binomial_sf(0, 50, 0.1) == 1.0 and binomial_sf(5, 50, 0.0) == 0.0 and binomial_sf(5, 50, 1.0) == 1.0
+    assert 0.0 <= binomial_sf(300, 400, 0.01) < 1e-300 or binomial_sf(300, 400, 0.01) == 0.0    # no overflow at large n
+
+
+def test_a_chance_looking_window_is_suppressed_by_the_significance_test():
+    """CARA has 10 flags of 90 (11%) in May-Jul vs peers' 3.3%: over 3x and at the minimum count, and unlikely
+    at the 1% level (p = 0.0009) taken alone, but with 180 tests run that is not unusual enough. It fires only
+    if the significance threshold is relaxed."""
+    norm, flags = world(lambda c, m: {5: 4, 6: 3, 7: 3}.get(m, 1) if c == "CARA" else 1)
+    assert systemic_findings(norm, flags, make_cfg()).empty
+    relaxed = make_cfg()
+    relaxed["evaluation"]["systemic"]["alpha"] = 1e6
+    row = systemic_findings(norm, flags, relaxed).iloc[0]
+    assert row.carrier_id == "CARA" and row.flagged == 10 and row.carrier_rate >= 3 * row.other_carriers_rate
+    assert 0.01 / 180 < row.p_value < 0.01                 # significant at 0.01 unadjusted, not after Bonferroni
 
 
 def test_systemic_check_ignores_a_tiny_sample():

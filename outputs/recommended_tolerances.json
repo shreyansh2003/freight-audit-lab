@@ -3,40 +3,52 @@
     "error_type": "rate_overcharge",
     "carrier_mode": "ALL",
     "current": 0.01,
-    "recommended": 0.005,
+    "recommended": 0.01,
+    "changed": false,
+    "best_point": 0.005,
     "min_precision": 0.9,
+    "min_material_gain": 1000.0,
     "current_net_value_estimate": 24648.77,
-    "recommended_net_value_estimate": 24791.8,
-    "rationale": "At 0.005 the linehaul rate check flags 269 invoices (precision 100.0%, recall 89.1%), the highest net value estimate ($24,792) of the 5 grid points that meet the 90% precision floor. The current 0.01 gives $24,649 at 100.0% precision, so moving to 0.005 changes the net value estimate by $143. Going lower to 0.0025 would add 9 true and 57 false flags (precision 83.0%), for a net value estimate of $23,117."
+    "best_net_value_estimate": 24791.8,
+    "rationale": "Keep 0.01: the best point, 0.005, has a net value estimate of $24,792, only $143 above the current $24,649 (precision 100.0%, recall 84.1%), which is not more than the $1,000 materiality threshold. Going lower to 0.005 would add 15 true and 0 false flags (precision 100.0%), for a net value estimate of $24,792."
   },
   "fsc_ltl_pp": {
     "error_type": "fsc_mismatch",
     "carrier_mode": "LTL",
     "current": 0.25,
-    "recommended": 0.5,
+    "recommended": 0.25,
+    "changed": false,
+    "best_point": 0.5,
     "min_precision": 0.9,
+    "min_material_gain": 1000.0,
     "current_net_value_estimate": 763.65,
-    "recommended_net_value_estimate": 767.11,
-    "rationale": "At 0.5 the fuel surcharge (LTL) check flags 122 invoices (precision 100.0%, recall 76.2%), the highest net value estimate ($767) of the 5 grid points that meet the 90% precision floor. The current 0.25 gives $764 at 100.0% precision, so moving to 0.5 changes the net value estimate by $3. Going lower to 0.25 would add 1 true and 0 false flags (precision 100.0%), for a net value estimate of $764."
+    "best_net_value_estimate": 767.11,
+    "rationale": "Keep 0.25: the best point, 0.5, has a net value estimate of $767, only $3 above the current $764 (precision 100.0%, recall 76.9%), which is not more than the $1,000 materiality threshold. Going lower to 0.1 would add 9 true and 7 false flags (precision 95.0%), for a net value estimate of $538."
   },
   "fsc_tl_pct": {
     "error_type": "fsc_mismatch",
     "carrier_mode": "TL",
     "current": 0.005,
     "recommended": 0.005,
+    "changed": false,
+    "best_point": 0.005,
     "min_precision": 0.9,
+    "min_material_gain": 1000.0,
     "current_net_value_estimate": 8669.87,
-    "recommended_net_value_estimate": 8669.87,
-    "rationale": "At 0.005 the fuel surcharge (TL) check flags 216 invoices (precision 100.0%, recall 94.3%), the highest net value estimate ($8,670) of the 6 grid points that meet the 90% precision floor. That is the current setting, so no change is recommended. Going lower to 0.0025 would add 0 true and 10 false flags (precision 95.6%), for a net value estimate of $8,375."
+    "best_net_value_estimate": 8669.87,
+    "rationale": "Keep 0.005: at that setting the fuel surcharge (TL) check flags 216 invoices (precision 100.0%, recall 94.3%), the highest net value estimate ($8,670) of the 6 grid points that meet the 90% precision floor. Going lower to 0.0025 would add 0 true and 10 false flags (precision 95.6%), for a net value estimate of $8,375."
   },
   "weight_pct": {
     "error_type": "weight_overbilling",
     "carrier_mode": "ALL",
     "current": 0.02,
-    "recommended": 0.0,
+    "recommended": 0.02,
+    "changed": false,
+    "best_point": 0.0,
     "min_precision": 0.9,
+    "min_material_gain": 1000.0,
     "current_net_value_estimate": 18875.28,
-    "recommended_net_value_estimate": 19057.63,
-    "rationale": "At 0 the weight check flags 192 invoices (precision 100.0%, recall 100.0%), the highest net value estimate ($19,058) of the 6 grid points that meet the 90% precision floor. The current 0.02 gives $18,875 at 100.0% precision, so moving to 0 changes the net value estimate by $182. Going higher to 0.005 would drop 2 true and 0 false flags, for a net value estimate of $19,046."
+    "best_net_value_estimate": 19057.63,
+    "rationale": "Keep 0.02: the best point, 0, has a net value estimate of $19,058, only $182 above the current $18,875 (precision 100.0%, recall 83.9%), which is not more than the $1,000 materiality threshold. Going lower to 0.01 would add 20 true and 0 false flags (precision 100.0%), for a net value estimate of $19,013. Caveat: the synthetic data has no scale noise (a billed weight is exact unless an error was injected), so it cannot calibrate the weight tolerance; use real scale-ticket differences."
   }
 }

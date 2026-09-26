@@ -376,14 +376,20 @@ recommended_tolerances.json, systemic_findings.csv).
   to the grid if it is missing. *Change:* `evaluation.sweep`.
 - **Net value** = TP dollars (the answer key's true dollars on TPs) - review cost - false-dispute cost, all
   three costs *estimates* from `evaluation.*`. It assumes every TP is disputed and recovered in full and every
-  FP costs `false_dispute_cost`. The recommended point maximizes it subject to precision >= `min_precision`;
-  ties go to the point closest to the current setting, and if no point meets the floor the most precise one
-  is recommended and the rationale says so. It is a mechanical maximum: a gain of a few dollars is not a
-  reason to change a setting. `config.yaml` is never edited.
+  FP costs `false_dispute_cost`. The *best* point maximizes it subject to precision >= `min_precision` (ties go
+  to the point closest to the current setting; if no point meets the floor the most precise one is named and
+  the rationale says so).
+- **Materiality rule.** The best point is *recommended* only if its net value beats the current setting's by
+  MORE than `evaluation.min_material_gain` ($1,000, an estimate); otherwise the recommendation is to keep the
+  current value and the rationale says by how little the best point missed. Why: net value is an estimate
+  built on estimated costs, and a gain of a few hundred dollars is not a reason to change a control.
+  Exception: if the current setting itself is below the precision floor, the floor is a hard constraint and
+  the best point is recommended whatever the gain. `sweep.csv` has both `is_best` and `is_recommended`; the
+  JSON has `best_point`, `changed` and the two net values. `config.yaml` is never edited.
 - **The synthetic data has no weight-measurement noise** (a billed weight is either the shipment weight, a
-  documented reweigh, or an injected error), so the weight sweep prefers a zero tolerance. Real scale
-  tickets differ by a few pounds; do not read the result as advice for real data. *Change:*
-  `errors.magnitudes.weight_*`, or add a weight-noise trap.
+  documented reweigh, or an injected error), so the weight sweep prefers a zero tolerance and cannot calibrate
+  the weight tolerance. The `weight_pct` rationale always carries that caveat. Real scale tickets differ by a
+  few pounds. *Change:* `errors.magnitudes.weight_*`, or add a weight-noise trap.
 - **Exception queue is one row per flagged invoice**, not per flag, because the invoice is the unit of work
   (one email to the carrier). `error_type` lists every flagged type in rule order joined by `;`, `reason`
   joins the reasons with ` | `, `dollar_impact_estimate` is the gross sum of the invoice's flags, and
@@ -393,14 +399,18 @@ recommended_tolerances.json, systemic_findings.csv).
   `.csv` (every flagged invoice for that carrier, ranked within the carrier). "Period" is the range of ship
   dates of the carrier's audited invoices. Per-type dollars are estimates; an invoice with several flags is
   counted under each type. *Change:* `evaluation.top_n_invoices`.
-- **Systemic check.** Rolling windows of `window_months` ship months (by the carrier-printed ship date). The
-  carrier's flag rate for a type (flagged / audited invoices shipped in the window) must be at least
-  `multiple` times the rate of the **other carriers of the same mode**, on at least `min_invoices` invoices
-  with at least `min_flags` flagged; per carrier and type the highest-rate window is kept. Two deliberate
-  departures from the spec's "all-carrier rate": (1) the carrier's own flags are left out, otherwise a very
-  bad carrier inflates its own yardstick; (2) same mode only, because weight checks exist only for LTL, fuel
-  is priced differently for TL, and accessorials differ. The check is tested across every carrier, type and
-  window, so at low counts it produces chance findings; `min_flags` is set to keep the noise down and the
-  remaining findings are labeled "possible". *Change:* `evaluation.systemic`.
+- **Systemic check.** Rolling windows of `window_months` ship months (by the carrier-printed ship date). A
+  carrier x error type x window is a finding only if all of these hold: at least `min_invoices` invoices and
+  `min_flags` flags in the window; a flag rate at least `multiple` times the rate of the **other carriers of the
+  same mode** (an effect-size filter, kept because a huge sample can make a trivial difference "significant");
+  and a **one-sided binomial test** (P(X >= flags | invoices, peer rate)) with p <= `alpha` / number of tests
+  (Bonferroni; the number of tests is every carrier x error type x window evaluated, so it does not depend on
+  which ones look bad). The p-value is computed exactly in log space, with no extra dependency, and is shown
+  in the finding text and `systemic_findings.csv`. If the peer rate is 0 the p-value is 0. Per carrier and
+  type the most significant window is kept. Departures from the spec's "all-carrier rate": the carrier's own
+  flags are left out of the peer rate (otherwise a very bad carrier inflates its own yardstick), and peers are
+  the same mode only (weight checks exist only for LTL, fuel is priced differently for TL, accessorials
+  differ). Limits of the test: the peer rate is treated as known (its own sampling error is ignored), and
+  flags within a window are treated as independent. *Change:* `evaluation.systemic`.
 - **Fuel-schedule diagnosis is not attempted.** The template says fuel was billed above schedule and by how
   much on average, and asks for the carrier's fuel table; it does not guess a cause such as a wrong diesel week.

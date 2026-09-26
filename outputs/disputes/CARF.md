@@ -30,4 +30,4 @@ An invoice with several flags is counted under each type.
 
 ## Systemic pattern check
 
-- Possible systemic issue: fuel surcharge billed above schedule on 98% of invoices shipped Aug-Oct 2025 (178 of 182) (on average 9.1% above expected) vs 1% across other TL carriers. Request the carrier's fuel surcharge table and corrected invoices.
+- Possible systemic issue: fuel surcharge billed above schedule on 98% of invoices shipped Aug-Oct 2025 (178 of 182) (on average 9.1% above expected) vs 1% across other TL carriers (one-sided binomial p < 1e-300, below the Bonferroni-adjusted threshold 2.1e-05). Request the carrier's fuel surcharge table and corrected invoices.

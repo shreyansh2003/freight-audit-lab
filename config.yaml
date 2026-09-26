@@ -155,6 +155,7 @@ evaluation:
     weight_pct: [0.0, 0.005, 0.01, 0.02, 0.03, 0.05]
     fsc_tl_pct: [0.0, 0.0025, 0.005, 0.01, 0.02, 0.05]
   min_precision: 0.90
+  min_material_gain: 1000.0        # ESTIMATE ($): change a tolerance only if the best point beats the current one by more
   review_minutes_per_flag: 6       # ESTIMATE
   analyst_cost_per_hour: 45.0      # ESTIMATE, loaded cost
   false_dispute_cost: 25.0         # ESTIMATE, carrier friction per wrong dispute
@@ -163,6 +164,7 @@ evaluation:
     multiple: 3.0                  # carrier flag rate must be at least this multiple of the other same-mode carriers' rate
     min_invoices: 20               # ... on at least this many of the carrier's invoices in the window
     min_flags: 10                  # ... with at least this many flagged (a handful of flags is noise)
+    alpha: 0.01                    # one-sided binomial test vs the peer rate, Bonferroni-divided by the number of tests
   top_n_invoices: 10               # invoices listed in each carrier dispute summary
 
 accruals:

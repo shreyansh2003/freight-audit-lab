@@ -6,6 +6,8 @@ recurring). Everything is built from the audit's own outputs and a fixed text te
 no LLM calls. Every dollar figure is an *estimate*.
 """
 
+from math import exp, fsum, lgamma, log, log1p
+
 import numpy as np
 import pandas as pd
 
@@ -79,60 +81,86 @@ def month_windows(months, width):
     return [(months[i], months[i + width - 1]) for i in range(len(months) - width + 1)]
 
 
+def binomial_sf(k, n, p):
+    """P(X >= k) for X ~ Binomial(n, p): the chance of seeing at least k flags in n invoices if the
+    carrier were flagged at the peer rate p. Summed in log space so large n never overflows."""
+    if k <= 0 or p >= 1:
+        return 1.0
+    if p <= 0:
+        return 0.0
+    logs = [lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * log(p) + (n - i) * log1p(-p)
+            for i in range(k, n + 1)]
+    top = max(logs)
+    return min(1.0, exp(top) * fsum(exp(x - top) for x in logs))
+
+
+FINDING_COLUMNS = ["carrier_id", "error_type", "window_start", "window_end", "invoices", "flagged", "carrier_rate",
+                   "other_carriers_rate", "mode", "p_value", "alpha_adjusted", "avg_billed_over_expected"]
+
+
 def systemic_findings(norm, flags, cfg):
-    """Carrier/error-type pairs whose flag rate in some rolling window is far above the all-carrier rate.
+    """Carrier/error-type pairs whose flag rate in some rolling window is far above their peers'.
 
     A carrier having one bad month is noise; a carrier billing the same wrong way for a quarter is a
     process problem (a stale fuel table, a mis-loaded rate card) worth one escalation instead of many
-    invoice disputes. For every rolling window of `window_months` ship months, the carrier's flag rate
-    for an error type (flagged invoices / audited invoices shipped in the window) is compared with the
-    same rate across the *other carriers of the same mode* (leaving the carrier out, so its own bad
-    stretch cannot inflate its yardstick; same mode because weight checks exist only for LTL, fuel is
-    priced differently for TL, and accessorials differ, so an LTL carrier compared with a pool that
-    includes TL would look worse than it is). It fires when the carrier's rate is at least
-    `multiple` times that rate, on at least `min_invoices` invoices with at least `min_flags` flagged
-    (so a tiny sample cannot fire it). Per carrier and error type only the highest-rate window is kept.
+    invoice disputes. For every rolling window of `window_months` ship months, the carrier's flag count
+    for an error type (out of the invoices shipped in the window) is compared with the flag rate of the
+    *other carriers of the same mode* (leaving the carrier out, so its own bad stretch cannot inflate its
+    yardstick; same mode because weight checks exist only for LTL, fuel is priced differently for TL, and
+    accessorials differ).
+
+    A finding needs all of: at least `min_invoices` invoices and `min_flags` flags (no tiny samples); a
+    rate at least `multiple` times the peer rate (a big enough effect to matter); and a one-sided binomial
+    p-value at or below `alpha` divided by the number of tests run (Bonferroni: every carrier x error
+    type x window is a test, and with hundreds of them some look bad by chance). Per carrier and error
+    type the most significant window is kept.
     """
     sysc = cfg["evaluation"]["systemic"]
     inv = norm["invoices"]
     inv = inv[~inv["is_superseded"]][["invoice_id", "carrier_id", "ship_date"]].copy()
     inv["mode"] = inv["carrier_id"].map({c["id"]: c["mode"] for c in cfg["carriers"]})
     inv["month"] = inv["ship_date"].dt.to_period("M")
-    months = sorted(inv["month"].unique())
+    windows = month_windows(sorted(inv["month"].unique()), sysc["window_months"])
+    n_tests = inv["carrier_id"].nunique() * len(ERROR_TYPES) * len(windows)
+    alpha_adjusted = sysc["alpha"] / n_tests if n_tests else sysc["alpha"]
     rows = []
     for error_type in ERROR_TYPES:
         hit = flags.loc[flags["error_type"] == error_type]
         inv["_flagged"] = inv["invoice_id"].isin(hit["invoice_id"])
-        for start, end in month_windows(months, sysc["window_months"]):
+        for start, end in windows:
             win = inv[(inv["month"] >= start) & (inv["month"] <= end)]
             for carrier, grp in win.groupby("carrier_id"):
                 n, k = len(grp), int(grp["_flagged"].sum())
+                if n < sysc["min_invoices"] or k < sysc["min_flags"]:
+                    continue
                 others = win[(win["mode"] == grp["mode"].iloc[0]) & (win["carrier_id"] != carrier)]
                 other_rate = others["_flagged"].mean() if len(others) else 0.0
-                if n >= sysc["min_invoices"] and k >= sysc["min_flags"] and k / n >= sysc["multiple"] * other_rate:
-                    ids = grp.loc[grp["_flagged"], "invoice_id"]
-                    over = hit[hit["invoice_id"].isin(ids)]
+                p_value = binomial_sf(k, n, other_rate)
+                if k / n >= sysc["multiple"] * other_rate and p_value <= alpha_adjusted:
+                    over = hit[hit["invoice_id"].isin(grp.loc[grp["_flagged"], "invoice_id"])]
                     avg_over = ((over["billed_value"] / over["expected_value"] - 1).mean()
                                 if error_type in OVERBILL_TYPES else np.nan)
                     rows.append({"carrier_id": carrier, "error_type": error_type, "window_start": start.start_time,
-                                 "window_end": end.end_time.normalize(), "invoices": n, "flagged": k, "carrier_rate": k / n,
-                                 "other_carriers_rate": other_rate, "mode": grp["mode"].iloc[0], "avg_billed_over_expected": avg_over})
+                                 "window_end": end.end_time.normalize(), "invoices": n, "flagged": k,
+                                 "carrier_rate": k / n, "other_carriers_rate": other_rate, "mode": grp["mode"].iloc[0],
+                                 "p_value": p_value, "alpha_adjusted": alpha_adjusted, "avg_billed_over_expected": avg_over})
     if not rows:
-        return pd.DataFrame(columns=["carrier_id", "error_type", "window_start", "window_end", "invoices", "flagged",
-                                     "carrier_rate", "other_carriers_rate", "mode", "avg_billed_over_expected"])
-    found = pd.DataFrame(rows).sort_values(["carrier_rate", "window_start"], ascending=[False, True])
-    return found.drop_duplicates(["carrier_id", "error_type"]).sort_values(["carrier_id", "error_type"]).reset_index(drop=True)
+        return pd.DataFrame(columns=FINDING_COLUMNS)
+    found = pd.DataFrame(rows).sort_values(["p_value", "window_start"])
+    return found.drop_duplicates(["carrier_id", "error_type"]).sort_values(["carrier_id", "error_type"]).reset_index(drop=True)[FINDING_COLUMNS]
 
 
 def systemic_line(f):
-    """The template sentence for one systemic finding."""
+    """The template sentence for one systemic finding, with the significance test's p-value."""
     same_year = f["window_start"].year == f["window_end"].year
     first, last = f["window_start"].strftime("%b"), f["window_end"].strftime("%b %Y")
     span = f"{first}-{last}" if same_year else f"{f['window_start'].strftime('%b %Y')}-{last}"
     over = ("" if np.isnan(f["avg_billed_over_expected"])
             else f" (on average {f['avg_billed_over_expected']:.1%} above expected)")
+    p = "< 1e-300" if f["p_value"] < 1e-300 else f"= {f['p_value']:.1e}"
     return (f"Possible systemic issue: {PATTERN_WORDS[f['error_type']]} on {f['carrier_rate']:.0%} of invoices shipped "
-            f"{span} ({f['flagged']} of {f['invoices']}){over} vs {f['other_carriers_rate']:.0%} across other {f['mode']} carriers. "
+            f"{span} ({f['flagged']} of {f['invoices']}){over} vs {f['other_carriers_rate']:.0%} across other {f['mode']} "
+            f"carriers (one-sided binomial p {p}, below the Bonferroni-adjusted threshold {f['alpha_adjusted']:.1e}). "
             f"{ASK[f['error_type']]}")
 
 
@@ -198,7 +226,8 @@ def write_exceptions(queue, disputes, findings, out_dir=OUTPUT_DIR):
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "disputes").mkdir(exist_ok=True)
     write_csv(queue, out_dir / "exception_queue.csv")
-    write_csv(findings.round({"carrier_rate": 4, "other_carriers_rate": 4, "avg_billed_over_expected": 4}),
+    write_csv(findings.round({"carrier_rate": 4, "other_carriers_rate": 4, "avg_billed_over_expected": 4}).assign(
+        p_value=findings["p_value"].map("{:.3e}".format), alpha_adjusted=findings["alpha_adjusted"].map("{:.3e}".format)),
               out_dir / "systemic_findings.csv")
     for carrier, (text, table) in disputes.items():
         (out_dir / "disputes" / f"{carrier}.md").write_text(text)

@@ -1,4 +1,3 @@
-carrier_id,error_type,window_start,window_end,invoices,flagged,carrier_rate,other_carriers_rate,mode,avg_billed_over_expected
-CARC,weight_overbilling,2025-02-01,2025-04-30,368,19,0.0516,0.0167,LTL,0.1848
-CARF,fsc_mismatch,2025-08-01,2025-10-31,182,178,0.978,0.0145,TL,0.0909
-CARG,rate_overcharge,2025-06-01,2025-08-31,169,11,0.0651,0.0147,TL,0.0736
+carrier_id,error_type,window_start,window_end,invoices,flagged,carrier_rate,other_carriers_rate,mode,p_value,alpha_adjusted,avg_billed_over_expected
+CARC,weight_overbilling,2025-01-01,2025-03-31,346,16,0.0462,0.013,LTL,1.618e-05,2.083e-05,0.2025
+CARF,fsc_mismatch,2025-08-01,2025-10-31,182,178,0.978,0.0145,TL,1.207e-320,2.083e-05,0.0909
