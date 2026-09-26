@@ -53,6 +53,8 @@ every line and every assumption in an interview, so clarity beats cleverness eve
 - If a spec requirement seems wrong or would take much longer than expected, say so and
   propose an alternative before building it.
 - Commit at the end of each stage with a message like `stage 3: normalization layer`.
+- `README.md`, `WALKTHROUGH.md` and `outputs/findings.md` are generated from `docs/*.template.md` and
+  `outputs/summary.json` by the pipeline. Edit the templates, never the generated files.
 
 ## Commands
 

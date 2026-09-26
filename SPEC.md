@@ -1,3 +1,5 @@
+> Original build plan. Where the build departed from it, ASSUMPTIONS.md records the change and why.
+
 # freight-audit-lab: build spec
 
 ## What this project is

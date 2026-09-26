@@ -5,6 +5,8 @@ Stage 3: normalize the raw files and match invoices to shipments.
 Stage 4: re-rate against the contract, audit with the rules, run the naive baseline.
 Stage 5: score against the answer key, sweep tolerances, build the exception queue and disputes.
 Stage 6: month-end accruals, journal entries, accrual accuracy, and the late-authorization sensitivity.
+Stage 8: outputs/summary.json (every headline number), then README.md, WALKTHROUGH.md and outputs/findings.md
+filled from it (docs.py).
 (Stage 7, the dashboard, reads outputs/: streamlit run streamlit_app.py)
 """
 
@@ -15,8 +17,10 @@ from freight_audit_lab.audit.baseline import run_baseline, write_baseline
 from freight_audit_lab.audit.engine import audit, write_audit
 from freight_audit_lab.audit.rules import RULES
 from freight_audit_lab.config import REPO_ROOT, load_config
+from freight_audit_lab.docs import write_docs
 from freight_audit_lab.evaluate import evaluate, load_labels, write_evaluation
 from freight_audit_lab.exceptions import build_disputes, build_exception_queue, write_exceptions
+from freight_audit_lab.summary import build_summary, write_summary
 from freight_audit_lab.sweep import run_sweep, write_sweep
 from freight_audit_lab.contract import (contract_linehaul, diesel_for_ship_date, fsc_ltl_amount,
                                         fsc_tl_amount, lookup_rate)
@@ -108,6 +112,11 @@ def main():
           f"MAPE {headline['mape_pct_estimate']:.2%}, bias {headline['bias_pct_estimate']:+.2%}")
     what_if = accruals["sensitivity"].iloc[-1]
     print(f"  if every authorization were recorded at delivery (estimate): error {what_if['error_pct_estimate_auth_at_delivery']:+.2%} overall")
+
+    summary = build_summary(cfg)
+    write_summary(summary)
+    write_docs(summary)
+    print(f"summary: outputs/summary.json; docs: README.md, WALKTHROUGH.md, outputs/findings.md")
 
 
 def print_flag_comparison(engine, baseline):

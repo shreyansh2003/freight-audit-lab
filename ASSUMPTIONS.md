@@ -1,7 +1,9 @@
 # Assumptions
 
 Every judgment call the spec leaves open, with the reason and the config key that changes it.
-Grouped by area. Stage 8 will tidy this into its final form.
+Grouped by area, and within an area by the stage that introduced it. `SPEC.md` is the original build plan;
+where the build departed from it, the departure is logged here with the reason. Result numbers are not
+quoted here: they live in `outputs/` (start with `outputs/summary.json`).
 
 ## General
 
@@ -519,3 +521,58 @@ Result numbers are not quoted here; the dashboard reads them from `outputs/` and
 - **Deploying.** `outputs/` is committed, so Streamlit Community Cloud serves it as is; if `outputs/` is missing the
   app runs the full pipeline once behind a spinner. Colours are one accent plus greys (light theme set in
   `.streamlit/config.toml`); engine and "as built" are the accent, baseline and what-if are grey.
+- **Polish pass after the first review.** The page uses Streamlit's wide layout with the content capped at 1,500 px, so a
+  laptop shows the full tables and an ultra-wide monitor stays readable. Bar charts reserve 64 px to the right of the plot
+  (`LABEL_ROOM` in `charts.py`) so the value printed after the longest bar is never clipped. The exception queue's Reason
+  column is 1,000 px wide (about 140 characters, the median reason), so it is the last column to scroll to; the longest
+  multi-flag reasons still run past it, and the CSV download has them in full. The dispute viewer opens on the carrier with
+  the smallest p-value in `systemic_findings.csv` (`strongest_systemic_carrier`), and the pack's Markdown headings are
+  turned into bold lines so they do not out-shout the page. Journal amounts are shown as text with blank cells, because
+  a null number cell prints as "None". Streamlit's toolbar and Deploy button are hidden with `client.toolbarMode = "minimal"`
+  in `.streamlit/config.toml`. *Placeholder:* the "Code on GitHub" link points at `#` (`GITHUB_URL` in `streamlit_app.py`)
+  until the repository URL is known.
+
+
+## Cost estimates (Stage 5)
+
+Gathered here because the spec lists them as their own area. All are estimates and none is a measurement.
+
+- **Review cost of a flag** = `evaluation.review_minutes_per_flag` (6) minutes at `evaluation.analyst_cost_per_hour` ($45,
+  loaded). *Why:* a flag has to be opened, checked against the contract, and written up; six minutes is a plausible
+  desk figure, not a benchmark.
+- **Cost of a wrong dispute** = `evaluation.false_dispute_cost` ($25), carrier friction on top of the review time. *Why:*
+  a rejected dispute costs goodwill and a follow-up, which the review minutes do not cover.
+- **Precision floor** `evaluation.min_precision` (0.90) and **materiality threshold** `evaluation.min_material_gain`
+  ($1,000) decide which tolerance the sweep recommends (see the Stage 5 notes above).
+- **Accrual allowance defaults** `accruals.default_accessorial_per_shipment` ($12 LTL, $8 TL) are used only for a carrier
+  with no invoices in the trailing window.
+
+
+## Summary and documents (Stage 8)
+
+Result numbers are not quoted here; read them from `outputs/summary.json`.
+
+- **`outputs/summary.json` has no run date.** The spec lists one, but rule 5 says the same config gives byte-identical
+  outputs, and a wall-clock date would change the file on every run. It carries `seed` and `audit_as_of` instead.
+  *Change:* not configurable (it is what reproducibility means).
+- **The summary is built only from `outputs/`.** Precision, recall, false positives and the answer-key dollars come from
+  the `eval_*.csv` files that `evaluate.py` wrote; `summary.py` adds the normalized invoice table (counts and ship dates)
+  and a handful of config values (cost estimates, systemic-test settings), and never opens the answer key.
+- **README.md, WALKTHROUGH.md and `outputs/findings.md` are generated.** They are templates in `docs/`, with
+  `{{path|format}}` placeholders filled from `summary.json` by `docs.py` at the end of every pipeline run. A placeholder
+  that does not resolve stops the run, so a document cannot quote a number the summary lacks, and a rerun rewrites every
+  quoted number. *Why:* rule 8 (never invent results) enforced by code, not by care. *Edit the template, not the output.*
+  A test checks that the committed documents equal a fresh render.
+- **Some sentences are still static prose whose truth depends on the config.** The main one is "a weaker pattern I did not
+  plant" in the systemic-test paragraphs: only one systemic issue is configured (CARF), so any second finding is not planted.
+  If `errors.systemic_issues` changes, reread the templates.
+- **"Below its own tolerance"** (the engine's misses) is the count of injected errors whose mode is `sub_tolerance` in
+  `eval_by_mode.csv`; the remaining misses are listed by type and mode in `engine_misses.other_detail`. Missed dollars are
+  answer-key dollars, not estimates, and are labeled that way.
+- **Baseline duplicate false flags "explained by" rebills and balance-due invoices** is the false duplicate flags attributed to
+  those two traps, divided by all false duplicate flags and capped at 100%, because traps overlap in `eval_traps.csv`.
+- **Accrual versus billed** (used in WALKTHROUGH question 6) is (accrual - `actual_billed`) / `actual_billed` over the same
+  shipment-month population as the payable comparison. It is an estimate because the accrual is.
+- **README length** is at most 550 words of prose, not counting the results table or the code block; a test enforces it.
+- **Placeholders left for the author:** `[Your name]` and `[dashboard link]` in `docs/README.template.md`, and `GITHUB_URL`
+  in `streamlit_app.py`.

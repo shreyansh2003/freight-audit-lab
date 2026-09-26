@@ -1,0 +1,423 @@
+{
+  "synthetic_data": true,
+  "seed": 42,
+  "audit_as_of": "2026-03-31",
+  "period": {
+    "start": "2025-01-01",
+    "months": 12
+  },
+  "scale": {
+    "carriers": 8,
+    "shipments": 10000,
+    "invoices_received": 10388,
+    "invoices_audited": 10288,
+    "billed_spend": 12033604.67,
+    "invoices_flagged": 1095,
+    "exception_queue_rows": 1095
+  },
+  "recoverable": {
+    "total_estimate": 294344.49,
+    "pct_of_billed_estimate": 0.0245,
+    "by_error_type_estimate": {
+      "duplicate_invoice": 150803.75,
+      "phantom_invoice": 64916.85,
+      "rate_overcharge": 25801.36,
+      "fsc_mismatch": 10952.75,
+      "unauthorized_accessorial": 22270.0,
+      "weight_overbilling": 19599.78
+    }
+  },
+  "engine_vs_baseline": {
+    "overall": {
+      "engine": {
+        "flags": 1124,
+        "tp": 1123,
+        "fp": 1,
+        "fn": 129,
+        "precision": 0.9991,
+        "recall": 0.897,
+        "dollar_recall": 0.9977,
+        "flagged_dollars_estimate": 294344.49
+      },
+      "baseline": {
+        "flags": 2673,
+        "tp": 1121,
+        "fp": 1552,
+        "fn": 131,
+        "precision": 0.4194,
+        "recall": 0.8954,
+        "dollar_recall": 0.9968,
+        "flagged_dollars_estimate": 620257.86
+      }
+    },
+    "by_type": {
+      "duplicate_invoice": {
+        "engine": {
+          "flags": 134,
+          "tp": 134,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "dollar_recall": 1.0,
+          "flagged_dollars_estimate": 150803.75
+        },
+        "baseline": {
+          "flags": 334,
+          "tp": 134,
+          "fp": 200,
+          "fn": 0,
+          "precision": 0.4012,
+          "recall": 1.0,
+          "dollar_recall": 1.0,
+          "flagged_dollars_estimate": 290245.65
+        }
+      },
+      "phantom_invoice": {
+        "engine": {
+          "flags": 55,
+          "tp": 54,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9818,
+          "recall": 1.0,
+          "dollar_recall": 1.0,
+          "flagged_dollars_estimate": 64916.85
+        },
+        "baseline": {
+          "flags": 123,
+          "tp": 54,
+          "fp": 69,
+          "fn": 0,
+          "precision": 0.439,
+          "recall": 1.0,
+          "dollar_recall": 1.0,
+          "flagged_dollars_estimate": 136846.4
+        }
+      },
+      "rate_overcharge": {
+        "engine": {
+          "flags": 254,
+          "tp": 254,
+          "fp": 0,
+          "fn": 48,
+          "precision": 1.0,
+          "recall": 0.8411,
+          "dollar_recall": 0.988,
+          "flagged_dollars_estimate": 25801.36
+        },
+        "baseline": {
+          "flags": 1059,
+          "tp": 254,
+          "fp": 805,
+          "fn": 48,
+          "precision": 0.2398,
+          "recall": 0.8411,
+          "dollar_recall": 0.9849,
+          "flagged_dollars_estimate": 88021.0
+        }
+      },
+      "fsc_mismatch": {
+        "engine": {
+          "flags": 339,
+          "tp": 339,
+          "fp": 0,
+          "fn": 50,
+          "precision": 1.0,
+          "recall": 0.8715,
+          "dollar_recall": 0.995,
+          "flagged_dollars_estimate": 10952.75
+        },
+        "baseline": {
+          "flags": 339,
+          "tp": 339,
+          "fp": 0,
+          "fn": 50,
+          "precision": 1.0,
+          "recall": 0.8715,
+          "dollar_recall": 0.995,
+          "flagged_dollars_estimate": 10952.75
+        }
+      },
+      "unauthorized_accessorial": {
+        "engine": {
+          "flags": 181,
+          "tp": 181,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "dollar_recall": 1.0,
+          "flagged_dollars_estimate": 22270.0
+        },
+        "baseline": {
+          "flags": 536,
+          "tp": 180,
+          "fp": 356,
+          "fn": 1,
+          "precision": 0.3358,
+          "recall": 0.9945,
+          "dollar_recall": 0.9944,
+          "flagged_dollars_estimate": 63580.0
+        }
+      },
+      "weight_overbilling": {
+        "engine": {
+          "flags": 161,
+          "tp": 161,
+          "fp": 0,
+          "fn": 31,
+          "precision": 1.0,
+          "recall": 0.8385,
+          "dollar_recall": 0.9838,
+          "flagged_dollars_estimate": 19599.78
+        },
+        "baseline": {
+          "flags": 282,
+          "tp": 160,
+          "fp": 122,
+          "fn": 32,
+          "precision": 0.5674,
+          "recall": 0.8333,
+          "dollar_recall": 0.9813,
+          "flagged_dollars_estimate": 30612.06
+        }
+      }
+    }
+  },
+  "traps": {
+    "traps": {
+      "balance_due": {
+        "invoices": 100,
+        "engine_false_flags": 0,
+        "baseline_false_flags": 103,
+        "engine_false_flags_by_type": {},
+        "baseline_false_flags_by_type": {
+          "duplicate_invoice": 100,
+          "phantom_invoice": 3
+        }
+      },
+      "bol_format": {
+        "invoices": 1569,
+        "engine_false_flags": 0,
+        "baseline_false_flags": 267,
+        "engine_false_flags_by_type": {},
+        "baseline_false_flags_by_type": {
+          "duplicate_invoice": 32,
+          "phantom_invoice": 45,
+          "rate_overcharge": 122,
+          "unauthorized_accessorial": 53,
+          "weight_overbilling": 15
+        }
+      },
+      "bol_typo": {
+        "invoices": 29,
+        "engine_false_flags": 1,
+        "baseline_false_flags": 30,
+        "engine_false_flags_by_type": {
+          "phantom_invoice": 1
+        },
+        "baseline_false_flags_by_type": {
+          "duplicate_invoice": 1,
+          "phantom_invoice": 29
+        }
+      },
+      "documented_reweigh": {
+        "invoices": 120,
+        "engine_false_flags": 1,
+        "baseline_false_flags": 233,
+        "engine_false_flags_by_type": {
+          "phantom_invoice": 1
+        },
+        "baseline_false_flags_by_type": {
+          "duplicate_invoice": 1,
+          "phantom_invoice": 1,
+          "rate_overcharge": 108,
+          "unauthorized_accessorial": 4,
+          "weight_overbilling": 119
+        }
+      },
+      "late_authorization": {
+        "invoices": 363,
+        "engine_false_flags": 0,
+        "baseline_false_flags": 391,
+        "engine_false_flags_by_type": {},
+        "baseline_false_flags_by_type": {
+          "rate_overcharge": 33,
+          "unauthorized_accessorial": 353,
+          "weight_overbilling": 5
+        }
+      },
+      "rate_amendment": {
+        "invoices": 1038,
+        "engine_false_flags": 0,
+        "baseline_false_flags": 622,
+        "engine_false_flags_by_type": {},
+        "baseline_false_flags_by_type": {
+          "duplicate_invoice": 9,
+          "phantom_invoice": 3,
+          "rate_overcharge": 554,
+          "unauthorized_accessorial": 36,
+          "weight_overbilling": 20
+        }
+      },
+      "rebill": {
+        "invoices": 100,
+        "engine_false_flags": 0,
+        "baseline_false_flags": 106,
+        "engine_false_flags_by_type": {},
+        "baseline_false_flags_by_type": {
+          "duplicate_invoice": 100,
+          "phantom_invoice": 1,
+          "rate_overcharge": 4,
+          "weight_overbilling": 1
+        }
+      },
+      "rounding_noise": {
+        "invoices": 966,
+        "engine_false_flags": 0,
+        "baseline_false_flags": 139,
+        "engine_false_flags_by_type": {},
+        "baseline_false_flags_by_type": {
+          "phantom_invoice": 5,
+          "rate_overcharge": 89,
+          "unauthorized_accessorial": 30,
+          "weight_overbilling": 15
+        }
+      }
+    },
+    "clean_invoices": {
+      "invoices": 5773,
+      "engine_false_flags": 0,
+      "baseline_false_flags": 0
+    }
+  },
+  "baseline_duplicates": {
+    "flags": 334,
+    "false_flags": 200,
+    "false_share": 0.5988,
+    "false_from_rebills": 100,
+    "false_from_balance_due": 100,
+    "share_explained_by_rebills_and_balance_due": 1.0
+  },
+  "engine_misses": {
+    "missed": 129,
+    "below_tolerance": 118,
+    "other": 11,
+    "other_detail": {
+      "fsc_mismatch_wrong_step": 2,
+      "fsc_mismatch_wrong_week": 9
+    },
+    "missed_true_dollars": 690.93,
+    "engine_false_positives": 1
+  },
+  "systemic": {
+    "n_findings": 2,
+    "n_others": 1,
+    "strongest": {
+      "carrier_id": "CARF",
+      "error_type": "fsc_mismatch",
+      "mode": "TL",
+      "window_start": "2025-08-01",
+      "window_end": "2025-10-31",
+      "invoices": 182,
+      "flagged": 178,
+      "carrier_rate": 0.978,
+      "other_carriers_rate": 0.0145,
+      "p_value": 1.207e-320,
+      "alpha_adjusted": 2.083e-05,
+      "avg_billed_over_expected": 0.0909,
+      "carrier_name": "Carrier F Trucking",
+      "mean_flag_dollars_estimate": 44.25
+    },
+    "others": [
+      {
+        "carrier_id": "CARC",
+        "error_type": "weight_overbilling",
+        "mode": "LTL",
+        "window_start": "2025-01-01",
+        "window_end": "2025-03-31",
+        "invoices": 346,
+        "flagged": 16,
+        "carrier_rate": 0.0462,
+        "other_carriers_rate": 0.013,
+        "p_value": 1.618e-05,
+        "alpha_adjusted": 2.083e-05,
+        "avg_billed_over_expected": 0.2025,
+        "carrier_name": "Carrier C Express",
+        "mean_flag_dollars_estimate": 139.64
+      }
+    ]
+  },
+  "recommended_tolerances": {
+    "swept": 4,
+    "changed": 0,
+    "each": {
+      "rate_pct": {
+        "error_type": "rate_overcharge",
+        "carrier_mode": "ALL",
+        "current": 0.01,
+        "best_point": 0.005,
+        "recommended": 0.01,
+        "changed": false
+      },
+      "fsc_ltl_pp": {
+        "error_type": "fsc_mismatch",
+        "carrier_mode": "LTL",
+        "current": 0.25,
+        "best_point": 0.5,
+        "recommended": 0.25,
+        "changed": false
+      },
+      "fsc_tl_pct": {
+        "error_type": "fsc_mismatch",
+        "carrier_mode": "TL",
+        "current": 0.005,
+        "best_point": 0.005,
+        "recommended": 0.005,
+        "changed": false
+      },
+      "weight_pct": {
+        "error_type": "weight_overbilling",
+        "carrier_mode": "ALL",
+        "current": 0.02,
+        "best_point": 0.0,
+        "recommended": 0.02,
+        "changed": false
+      }
+    }
+  },
+  "assumptions": {
+    "min_precision": 0.9,
+    "min_material_gain": 1000.0,
+    "false_dispute_cost": 25.0,
+    "review_minutes_per_flag": 6,
+    "analyst_cost_per_hour": 45.0,
+    "systemic_multiple": 3.0,
+    "systemic_alpha": 0.01
+  },
+  "accruals": {
+    "shipment_month_accruals": 5793,
+    "accrual_estimate": 6767852.54,
+    "actual_payable_estimate": 6784343.09,
+    "actual_billed": 6909640.07,
+    "net_error_pct_vs_billed_estimate": -0.0205,
+    "net_error_estimate": -16490.55,
+    "net_error_pct_estimate": -0.0024,
+    "direction": "below",
+    "gap_word": "shortfall",
+    "mape_pct_estimate": 0.0031,
+    "bias_pct_estimate": -0.0025,
+    "worst_month": {
+      "month_end": "2025-09-30",
+      "error_pct_estimate": -0.0073
+    },
+    "linehaul_fuel_error_pct_estimate": -0.001,
+    "accessorial_error_pct_estimate": -0.0869,
+    "accessorial_share_of_accrual": 0.0155,
+    "accessorial_share_of_net_error": 0.6057,
+    "late_authorization_effect_estimate": 7094.66,
+    "late_authorization_share_of_net_error": 0.4302,
+    "net_error_pct_if_authorized_at_delivery_estimate": -0.0014
+  }
+}
