@@ -16,6 +16,7 @@ from freight_audit_lab.docs import DOCUMENTS, TEMPLATE_DIR, lookup, render
 from freight_audit_lab.summary import build_summary
 
 README_WORD_LIMIT = 550         # the spec's one-page memo, not counting the results table or the code block
+LOCAL_ONLY = {"WALKTHROUGH.template.md"}     # gitignored: the pipeline writes the file, but a fresh clone will not have it
 
 
 @pytest.fixture(scope="module")
@@ -65,6 +66,8 @@ def test_every_template_renders_from_the_committed_summary_and_matches_the_commi
     for name, target in DOCUMENTS.items():
         text = render((TEMPLATE_DIR / name).read_text(), summary)
         assert "{{" not in text and "}}" not in text, name
+        if name in LOCAL_ONLY and not target.exists():
+            continue
         assert target.read_text() == text, f"{target.relative_to(REPO_ROOT)} is stale: rerun the pipeline"
 
 
@@ -81,8 +84,8 @@ def test_readme_is_one_page_and_has_its_links():
     assert "built the generator" in text                                               # the plain statement about circularity
 
 
-def test_walkthrough_has_twelve_numbered_questions_and_findings_has_three():
-    walkthrough = (REPO_ROOT / "WALKTHROUGH.md").read_text()
+def test_walkthrough_has_twelve_numbered_questions_and_findings_has_three(summary):
+    walkthrough = render((TEMPLATE_DIR / "WALKTHROUGH.template.md").read_text(), summary)
     assert re.findall(r"^### (\d+)\. ", walkthrough, flags=re.M) == [str(n) for n in range(1, 13)]
     findings = (OUTPUT_DIR / "findings.md").read_text()
     assert re.findall(r"^## (\d+)\. ", findings, flags=re.M) == ["1", "2", "3"]
@@ -94,8 +97,9 @@ def test_spec_starts_with_the_departures_note():
     assert first == "> Original build plan. Where the build departed from it, ASSUMPTIONS.md records the change and why."
 
 
-def test_p_values_use_one_style_and_the_floor_is_not_printed_as_a_number():
+def test_p_values_use_one_style_and_the_floor_is_not_printed_as_a_number(summary):
     from freight_audit_lab.docs import render
     assert render("{{p|pval}}", {"p": 1.2e-320}) == "p < 1e-300"
     assert render("{{p|pval}}", {"p": 1.6e-05}) == "p = 1.6e-05"
-    assert "e-320" not in (REPO_ROOT / "README.md").read_text() + (REPO_ROOT / "WALKTHROUGH.md").read_text()
+    walkthrough = render((TEMPLATE_DIR / "WALKTHROUGH.template.md").read_text(), summary)
+    assert "e-320" not in (REPO_ROOT / "README.md").read_text() + walkthrough

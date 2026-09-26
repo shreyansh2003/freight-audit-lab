@@ -31,7 +31,7 @@ real audit looks like, and the naive baseline shows the difference.
 
 ```
 freight-audit-lab/
-  CLAUDE.md  SPEC.md  README.md  ASSUMPTIONS.md  WALKTHROUGH.md
+  SPEC.md  README.md  ASSUMPTIONS.md
   config.yaml  requirements.txt  .gitignore  streamlit_app.py
   freight_audit_lab/
     __init__.py  config.py  run.py
@@ -362,7 +362,7 @@ For each of the 12 month-ends M:
   - At M: Dr `Freight Expense` (one line per cost center), Cr `Accrued Freight` (total).
   - On day 1 of M+1: the exact reversal.
   - Memo says "ESTIMATE – synthetic data". Posting the invoices to AP is out of scope. In
-    WALKTHROUGH, explain that the reversal plus the invoice posting produces the true-up.
+    the walkthrough notes, explain that the reversal plus the invoice posting produces the true-up.
 - **Accuracy**: for the shipments accrued at M, compare the accrual with what they
   eventually cost: `actual_billed` (non-superseded invoices incl. balance due) and
   `actual_payable` (billed − recoverable_estimate, since you owe the right amount, not the
@@ -427,7 +427,7 @@ matches to the cent.
 - **ASSUMPTIONS.md**: every assumption grouped by area (network, rates, FSC, invoicing,
   errors, traps, audit, accruals, cost estimates), each with its value, why, and its config
   key.
-- **WALKTHROUGH.md**: a plain-English tour of the pipeline for the author, then **12
+- **Walkthrough notes (kept local, not published)**: a plain-English tour of the pipeline for the author, then **12
   questions a skeptical reviewer would ask, with answers**: why precision matters more
   than recall in disputes; how leakage is prevented; why recall is below 100%; how the
   impacts avoid double counting; why accrue at payable rather than billed; what changes with

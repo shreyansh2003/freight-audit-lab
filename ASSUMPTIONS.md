@@ -590,7 +590,7 @@ Result numbers are not quoted here; read them from `outputs/summary.json`.
 - **The summary is built only from `outputs/`.** Precision, recall, false positives and the answer-key dollars come from
   the `eval_*.csv` files that `evaluate.py` wrote; `summary.py` adds the normalized invoice table (counts and ship dates)
   and a handful of config values (cost estimates, systemic-test settings), and never opens the answer key.
-- **README.md, WALKTHROUGH.md and `outputs/findings.md` are generated.** They are templates in `docs/`, with
+- **README.md and `outputs/findings.md` are generated.** So are the author's local walkthrough notes (see the last bullet). They are templates in `docs/`, with
   `{{path|format}}` placeholders filled from `summary.json` by `docs.py` at the end of every pipeline run. A placeholder
   that does not resolve stops the run, so a document cannot quote a number the summary lacks, and a rerun rewrites every
   quoted number. *Why:* rule 8 (never invent results) enforced by code, not by care. *Edit the template, not the output.*
@@ -604,9 +604,9 @@ Result numbers are not quoted here; read them from `outputs/summary.json`.
 - **Baseline duplicate false flags "explained by" rebills and balance-due invoices** is the false duplicate flags attributed to
   the rebill / balance due cause in `baseline_fp_causes.csv`, divided by all false duplicate flags. (An earlier version summed the
   per-trap counts from `eval_traps.csv` and capped the result at 100%, which hid the overlap.)
-- **False flags by cause in the README and WALKTHROUGH question 9** come from `baseline_fp_causes.csv` through `summary.json`
+- **False flags by cause in the README and walkthrough notes (question 9)** come from `baseline_fp_causes.csv` through `summary.json`
   (`baseline_fp_causes`), not from the overlapping trap table.
-- **Accrual versus billed** (used in WALKTHROUGH question 6) is (accrual - `actual_billed`) / `actual_billed` over the same
+- **Accrual versus billed** (used in walkthrough notes, question 6) is (accrual - `actual_billed`) / `actual_billed` over the same
   shipment-month population as the payable comparison. It is an estimate because the accrual is.
 - **README length** is at most 550 words of prose, not counting the results table or the code block; a test enforces it.
 - **One p-value style** (`exceptions.p_text`, used by the docs, the dashboard and the dispute packs): "p < 1e-300" below that
@@ -614,8 +614,9 @@ Result numbers are not quoted here; read them from `outputs/summary.json`.
   keep the raw p-value.
 - **Sweep wording.** The docs say no tolerance change clears the materiality bar and quote the largest gain
   (`recommended_tolerances.largest_gain_estimate` in `summary.json`). That sentence is static prose: if a rerun ever recommends a
-  change, reread the README, WALKTHROUGH question 4 and `findings.md`. The bar is a judgment, not a finding.
+  change, reread the README, the walkthrough notes (question 4) and `findings.md`. The bar is a judgment, not a finding.
 - **"Accruals" totals.** `accrual_estimate` in `accrual_accuracy.csv` and `summary.json` is the sum of the month-end balances, so
   a shipment still unbilled at the next month-end is counted again. The documents call it that and never as one accrual amount.
 - **Author details** (LinkedIn, GitHub) are in `docs/README.template.md` and `GITHUB_URL` / the byline in `streamlit_app.py`.
   The live dashboard link (https://shreyansh-freight-audit-lab.streamlit.app) is in `docs/README.template.md`; it was filled in after deploying to Streamlit Community Cloud.
+- **Two working files stay local and are not published:** the author's interview walkthrough (`WALKTHROUGH.md`, still written by the pipeline from `docs/WALKTHROUGH.template.md`) and a project-notes file. Both are in `.gitignore`. *Why:* they are working notes, not part of the project write-up. *Change:* remove the `.gitignore` lines.

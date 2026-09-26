@@ -4,3 +4,7 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .streamlit/secrets.toml
+
+# kept on the author's machine only; the pipeline still writes WALKTHROUGH.md locally
+CLAUDE.md
+WALKTHROUGH.md
