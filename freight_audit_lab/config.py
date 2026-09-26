@@ -55,6 +55,12 @@ REQUIRED_KEYS = [
     "audit.tolerances.rate_pct", "audit.tolerances.rate_abs", "audit.tolerances.fsc_ltl_pp",
     "audit.tolerances.fsc_min_dollars", "audit.tolerances.fsc_tl_abs", "audit.tolerances.fsc_tl_pct",
     "audit.tolerances.weight_pct",
+    # Stage 5
+    "evaluation.sweep.rate_pct", "evaluation.sweep.fsc_ltl_pp", "evaluation.sweep.weight_pct",
+    "evaluation.sweep.fsc_tl_pct", "evaluation.min_precision", "evaluation.review_minutes_per_flag",
+    "evaluation.analyst_cost_per_hour", "evaluation.false_dispute_cost",
+    "evaluation.systemic.window_months", "evaluation.systemic.multiple",
+    "evaluation.systemic.min_invoices", "evaluation.systemic.min_flags", "evaluation.top_n_invoices",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",

@@ -3,7 +3,8 @@
 Stages 1-2: generate reference data, invoices, raw carrier files, and the answer key.
 Stage 3: normalize the raw files and match invoices to shipments.
 Stage 4: re-rate against the contract, audit with the rules, run the naive baseline.
-Later stages append evaluation, accruals, and so on.
+Stage 5: score against the answer key, sweep tolerances, build the exception queue and disputes.
+Later stages append accruals and so on.
 """
 
 import time
@@ -12,6 +13,9 @@ from freight_audit_lab.audit.baseline import run_baseline, write_baseline
 from freight_audit_lab.audit.engine import audit, write_audit
 from freight_audit_lab.audit.rules import RULES
 from freight_audit_lab.config import REPO_ROOT, load_config
+from freight_audit_lab.evaluate import evaluate, load_labels, write_evaluation
+from freight_audit_lab.exceptions import build_disputes, build_exception_queue, write_exceptions
+from freight_audit_lab.sweep import run_sweep, write_sweep
 from freight_audit_lab.contract import (contract_linehaul, diesel_for_ship_date, fsc_ltl_amount,
                                         fsc_tl_amount, lookup_rate)
 from freight_audit_lab.csv_io import load_reference
@@ -70,6 +74,26 @@ def main():
     write_baseline(baseline)
     print(f"audit + baseline: {time.perf_counter() - t0:.1f}s")
     print_flag_comparison(engine, baseline)
+
+    t0 = time.perf_counter()
+    labels = load_labels(REPO_ROOT / "data")
+    evaluation = evaluate(engine["flags"], baseline["flags"], labels)
+    write_evaluation(evaluation)
+    swept = run_sweep(normalized, rerated, ref, cfg, labels)
+    write_sweep(swept)
+    print(f"evaluate + sweep: {time.perf_counter() - t0:.1f}s")
+    overall = evaluation["engine_vs_baseline"].set_index("error_type").loc["ALL"]
+    print(f"  engine   precision {overall['engine_precision']:.1%}  recall {overall['engine_recall']:.1%}   "
+          f"baseline precision {overall['baseline_precision']:.1%}  recall {overall['baseline_recall']:.1%}")
+    for name, rec in swept["recommended"].items():
+        print(f"  sweep {name:<11} current {rec['current']:g} -> recommended {rec['recommended']:g}")
+
+    t0 = time.perf_counter()
+    queue = build_exception_queue(normalized, engine["flags"], engine["invoice_summary"], cfg)
+    disputes, findings = build_disputes(normalized, engine["flags"], queue, cfg)
+    write_exceptions(queue, disputes, findings)
+    print(f"exceptions: {time.perf_counter() - t0:.1f}s  ({len(queue)} open exceptions, "
+          f"{len(findings)} systemic findings, {len(disputes)} dispute packs)")
 
 
 def print_flag_comparison(engine, baseline):

@@ -1,0 +1,10 @@
+trap,n_invoices,engine_fp,engine_fp_by_type,baseline_fp,baseline_fp_by_type
+balance_due,100,0,,103,duplicate_invoice:100;phantom_invoice:3
+bol_format,1569,0,,267,duplicate_invoice:32;phantom_invoice:45;rate_overcharge:122;unauthorized_accessorial:53;weight_overbilling:15
+bol_typo,29,1,phantom_invoice:1,30,duplicate_invoice:1;phantom_invoice:29
+documented_reweigh,120,1,phantom_invoice:1,233,duplicate_invoice:1;phantom_invoice:1;rate_overcharge:108;unauthorized_accessorial:4;weight_overbilling:119
+late_authorization,363,0,,391,rate_overcharge:33;unauthorized_accessorial:353;weight_overbilling:5
+rate_amendment,1038,0,,622,duplicate_invoice:9;phantom_invoice:3;rate_overcharge:554;unauthorized_accessorial:36;weight_overbilling:20
+rebill,100,0,,106,duplicate_invoice:100;phantom_invoice:1;rate_overcharge:4;weight_overbilling:1
+rounding_noise,966,0,,139,phantom_invoice:5;rate_overcharge:89;unauthorized_accessorial:30;weight_overbilling:15
+(none: clean invoice),5773,0,,0,

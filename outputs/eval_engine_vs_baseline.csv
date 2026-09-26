@@ -1,0 +1,8 @@
+error_type,engine_flags,engine_tp,engine_fp,engine_fn,engine_precision,engine_recall,engine_f1,engine_dollar_recall,engine_flagged_dollars_estimate,baseline_flags,baseline_tp,baseline_fp,baseline_fn,baseline_precision,baseline_recall,baseline_f1,baseline_dollar_recall,baseline_flagged_dollars_estimate
+duplicate_invoice,134,134,0,0,1.0,1.0,1.0,1.0,150803.75,334,134,200,0,0.4012,1.0,0.5726,1.0,290245.65
+phantom_invoice,55,54,1,0,0.9818,1.0,0.9908,1.0,64916.85,123,54,69,0,0.439,1.0,0.6102,1.0,136846.4
+rate_overcharge,254,254,0,48,1.0,0.8411,0.9137,0.988,25801.36,1059,254,805,48,0.2398,0.8411,0.3733,0.9849,88021.0
+fsc_mismatch,339,339,0,50,1.0,0.8715,0.9313,0.995,10952.75,339,339,0,50,1.0,0.8715,0.9313,0.995,10952.75
+unauthorized_accessorial,181,181,0,0,1.0,1.0,1.0,1.0,22270.0,536,180,356,1,0.3358,0.9945,0.5021,0.9944,63580.0
+weight_overbilling,161,161,0,31,1.0,0.8385,0.9122,0.9838,19599.78,282,160,122,32,0.5674,0.8333,0.6751,0.9813,30612.06
+ALL,1124,1123,1,129,0.9991,0.897,0.9453,0.9977,294344.49,2673,1121,1552,131,0.4194,0.8954,0.5712,0.9968,620257.86

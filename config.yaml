@@ -153,10 +153,17 @@ evaluation:
     rate_pct:   [0.0, 0.0025, 0.005, 0.01, 0.02, 0.03, 0.05]
     fsc_ltl_pp: [0.0, 0.1, 0.25, 0.5, 1.0, 2.0]
     weight_pct: [0.0, 0.005, 0.01, 0.02, 0.03, 0.05]
+    fsc_tl_pct: [0.0, 0.0025, 0.005, 0.01, 0.02, 0.05]
   min_precision: 0.90
   review_minutes_per_flag: 6       # ESTIMATE
   analyst_cost_per_hour: 45.0      # ESTIMATE, loaded cost
   false_dispute_cost: 25.0         # ESTIMATE, carrier friction per wrong dispute
+  systemic:                        # "possible systemic issue" check in the dispute summaries
+    window_months: 3               # rolling window of ship months
+    multiple: 3.0                  # carrier flag rate must be at least this multiple of the other same-mode carriers' rate
+    min_invoices: 20               # ... on at least this many of the carrier's invoices in the window
+    min_flags: 10                  # ... with at least this many flagged (a handful of flags is noise)
+  top_n_invoices: 10               # invoices listed in each carrier dispute summary
 
 accruals:
   trailing_days: 90

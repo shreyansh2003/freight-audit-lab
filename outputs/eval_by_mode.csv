@@ -1,0 +1,16 @@
+error_type,mode,n_labeled,true_dollars,engine_detected,engine_recall,engine_dollar_recall,baseline_detected,baseline_recall,baseline_dollar_recall
+duplicate_invoice,rekeyed,74,75953.18,74,1.0,1.0,74,1.0,1.0
+duplicate_invoice,resend,60,74850.57,60,1.0,1.0,60,1.0,1.0
+phantom_invoice,,54,64676.45,54,1.0,1.0,54,1.0,1.0
+rate_overcharge,markup,250,25693.11,250,1.0,1.0,250,1.0,1.0
+rate_overcharge,stale_rate,4,98.66,4,1.0,1.0,0,0.0,0.0
+rate_overcharge,sub_tolerance,48,314.16,0,0.0,0.0,4,0.0833,0.0602
+fsc_mismatch,sub_tolerance,40,44.2,1,0.025,0.0235,1,0.025,0.0235
+fsc_mismatch,wrong_step,112,2615.12,110,0.9821,0.9992,110,0.9821,0.9992
+fsc_mismatch,wrong_table,178,7881.87,178,1.0,1.0,178,1.0,1.0
+fsc_mismatch,wrong_week,59,472.75,50,0.8475,0.9793,50,0.8475,0.9793
+unauthorized_accessorial,detention,26,5025.0,26,1.0,1.0,26,1.0,1.0
+unauthorized_accessorial,liftgate,71,6745.0,71,1.0,1.0,71,1.0,1.0
+unauthorized_accessorial,residential,84,10500.0,84,1.0,1.0,83,0.9881,0.9881
+weight_overbilling,inflation,161,19599.78,161,1.0,1.0,160,0.9938,0.9974
+weight_overbilling,sub_tolerance,31,321.85,0,0.0,0.0,0,0.0,0.0

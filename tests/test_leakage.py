@@ -46,3 +46,14 @@ def test_results_are_identical_with_the_answer_key_removed(full, cfg, audited, t
     for name in with_key:
         pd.testing.assert_frame_equal(with_key[name], without_key[name], obj=name)
     assert len(with_key["audit_flags"]) > 0
+
+
+def test_only_the_generator_evaluate_and_sweep_mention_the_answer_key():
+    """CLAUDE.md rule 2: outside generate/ (which writes the key), only evaluate.py and sweep.py may name it,
+    and sweep.py reads it through evaluate.load_labels."""
+    allowed = {"evaluate.py", "sweep.py"}
+    offenders = [str(f.relative_to(PACKAGE)) for f in sorted(PACKAGE.rglob("*.py"))
+                 if f.relative_to(PACKAGE).parts[0] != "generate" and f.name not in allowed
+                 and any(word in f.read_text() for word in FORBIDDEN)]
+    assert not offenders, f"these files mention the answer key: {offenders}"
+    assert "read_csv" not in (PACKAGE / "sweep.py").read_text()      # loads labels only via evaluate.load_labels

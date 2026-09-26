@@ -350,3 +350,57 @@ Grouped by area. Stage 8 will tidy this into its final form.
   from rate, a weight-inflated invoice can trip both checks and baseline dollars can overlap. Baseline
   recoverable dollars use the engine's counting rule. *Change:* the shortcuts are code, not config
   (they are the point); tolerances are shared with the engine.
+
+
+## Evaluation, sweep, exception queue, disputes (Stage 5)
+
+Result numbers are not quoted here; read them from `outputs/` (eval_*.csv, sweep.csv,
+recommended_tolerances.json, systemic_findings.csv).
+
+- **Unit of scoring is (invoice_id, error_type).** A flag with a matching error label is a TP, a flag
+  without one an FP, and a label without a flag an FN. Several flags of one type on one invoice (e.g. two
+  unauthorized accessorial lines) count once. Superseded invoices are dropped from both sides, so the
+  baseline's flags on them are not scored (its raw flag count in `baseline_flags.csv` is therefore higher
+  than the evaluated count).
+- **"Flagged $" counts only flags that count toward recoverable** (`counted_in_recoverable`), so a duplicate
+  that also carries a rate flag is not counted twice. It is the audit's *estimate*; "true $" and the TP
+  dollars behind dollar recall come from the answer key. Dollar recall = true $ of the TPs / all true $.
+- **Trap table.** A false positive is any (invoice, error_type) flag with no matching error label, attributed
+  to every trap the invoice carries, so traps that overlap (a BOL-noise invoice that is also on an amended
+  lane) share their false positives; the columns are not additive. The last row is the same count on clean
+  invoices. `*_fp_by_type` says which rule raised them.
+- **Each sweep scores only the rule (and carrier mode) its tolerance governs**: `rate_pct` on
+  rate_overcharge, `weight_pct` on weight_overbilling, `fsc_ltl_pp` on fsc_mismatch for LTL carriers, and
+  `fsc_tl_pct` on fsc_mismatch for TL carriers. Scoring the whole engine would hide the change under the
+  unchanged flags of other rules and make the precision floor meaningless. The current config value is added
+  to the grid if it is missing. *Change:* `evaluation.sweep`.
+- **Net value** = TP dollars (the answer key's true dollars on TPs) - review cost - false-dispute cost, all
+  three costs *estimates* from `evaluation.*`. It assumes every TP is disputed and recovered in full and every
+  FP costs `false_dispute_cost`. The recommended point maximizes it subject to precision >= `min_precision`;
+  ties go to the point closest to the current setting, and if no point meets the floor the most precise one
+  is recommended and the rationale says so. It is a mechanical maximum: a gain of a few dollars is not a
+  reason to change a setting. `config.yaml` is never edited.
+- **The synthetic data has no weight-measurement noise** (a billed weight is either the shipment weight, a
+  documented reweigh, or an injected error), so the weight sweep prefers a zero tolerance. Real scale
+  tickets differ by a few pounds; do not read the result as advice for real data. *Change:*
+  `errors.magnitudes.weight_*`, or add a weight-noise trap.
+- **Exception queue is one row per flagged invoice**, not per flag, because the invoice is the unit of work
+  (one email to the carrier). `error_type` lists every flagged type in rule order joined by `;`, `reason`
+  joins the reasons with ` | `, `dollar_impact_estimate` is the gross sum of the invoice's flags, and
+  `recoverable_estimate` is the engine's de-duplicated figure. Ranked by recoverable, then earliest received.
+  `days_open` runs from the received date to `audit_as_of` (as of the audit date, not today).
+- **Dispute pack** = `disputes/<carrier>.md` (period, counts and $ by type, top invoices, systemic check) and
+  `.csv` (every flagged invoice for that carrier, ranked within the carrier). "Period" is the range of ship
+  dates of the carrier's audited invoices. Per-type dollars are estimates; an invoice with several flags is
+  counted under each type. *Change:* `evaluation.top_n_invoices`.
+- **Systemic check.** Rolling windows of `window_months` ship months (by the carrier-printed ship date). The
+  carrier's flag rate for a type (flagged / audited invoices shipped in the window) must be at least
+  `multiple` times the rate of the **other carriers of the same mode**, on at least `min_invoices` invoices
+  with at least `min_flags` flagged; per carrier and type the highest-rate window is kept. Two deliberate
+  departures from the spec's "all-carrier rate": (1) the carrier's own flags are left out, otherwise a very
+  bad carrier inflates its own yardstick; (2) same mode only, because weight checks exist only for LTL, fuel
+  is priced differently for TL, and accessorials differ. The check is tested across every carrier, type and
+  window, so at low counts it produces chance findings; `min_flags` is set to keep the noise down and the
+  remaining findings are labeled "possible". *Change:* `evaluation.systemic`.
+- **Fuel-schedule diagnosis is not attempted.** The template says fuel was billed above schedule and by how
+  much on average, and asks for the carrier's fuel table; it does not guess a cause such as a wrong diesel week.
