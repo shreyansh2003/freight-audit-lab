@@ -1,0 +1,145 @@
+je_id,date,type,account,cost_center,debit,credit,memo
+ACR-202501,2025-01-31,accrual,6100 Freight Expense,CC-101,75578.06,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-01-31 and not yet invoiced
+ACR-202501,2025-01-31,accrual,6100 Freight Expense,CC-102,64147.71,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-01-31 and not yet invoiced
+ACR-202501,2025-01-31,accrual,6100 Freight Expense,CC-103,108740.57,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-01-31 and not yet invoiced
+ACR-202501,2025-01-31,accrual,6100 Freight Expense,CC-104,104309.99,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-01-31 and not yet invoiced
+ACR-202501,2025-01-31,accrual,6100 Freight Expense,CC-105,42554.76,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-01-31 and not yet invoiced
+ACR-202501,2025-01-31,accrual,2150 Accrued Freight,,0.0,395331.09,ESTIMATE – synthetic data: accrual of freight delivered through 2025-01-31 and not yet invoiced
+REV-202501,2025-02-01,reversal,6100 Freight Expense,CC-101,0.0,75578.06,ESTIMATE – synthetic data: reversal of ACR-202501
+REV-202501,2025-02-01,reversal,6100 Freight Expense,CC-102,0.0,64147.71,ESTIMATE – synthetic data: reversal of ACR-202501
+REV-202501,2025-02-01,reversal,6100 Freight Expense,CC-103,0.0,108740.57,ESTIMATE – synthetic data: reversal of ACR-202501
+REV-202501,2025-02-01,reversal,6100 Freight Expense,CC-104,0.0,104309.99,ESTIMATE – synthetic data: reversal of ACR-202501
+REV-202501,2025-02-01,reversal,6100 Freight Expense,CC-105,0.0,42554.76,ESTIMATE – synthetic data: reversal of ACR-202501
+REV-202501,2025-02-01,reversal,2150 Accrued Freight,,395331.09,0.0,ESTIMATE – synthetic data: reversal of ACR-202501
+ACR-202502,2025-02-28,accrual,6100 Freight Expense,CC-101,125199.98,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-02-28 and not yet invoiced
+ACR-202502,2025-02-28,accrual,6100 Freight Expense,CC-102,86701.38,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-02-28 and not yet invoiced
+ACR-202502,2025-02-28,accrual,6100 Freight Expense,CC-103,145889.63,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-02-28 and not yet invoiced
+ACR-202502,2025-02-28,accrual,6100 Freight Expense,CC-104,121699.96,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-02-28 and not yet invoiced
+ACR-202502,2025-02-28,accrual,6100 Freight Expense,CC-105,51100.73,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-02-28 and not yet invoiced
+ACR-202502,2025-02-28,accrual,2150 Accrued Freight,,0.0,530591.68,ESTIMATE – synthetic data: accrual of freight delivered through 2025-02-28 and not yet invoiced
+REV-202502,2025-03-01,reversal,6100 Freight Expense,CC-101,0.0,125199.98,ESTIMATE – synthetic data: reversal of ACR-202502
+REV-202502,2025-03-01,reversal,6100 Freight Expense,CC-102,0.0,86701.38,ESTIMATE – synthetic data: reversal of ACR-202502
+REV-202502,2025-03-01,reversal,6100 Freight Expense,CC-103,0.0,145889.63,ESTIMATE – synthetic data: reversal of ACR-202502
+REV-202502,2025-03-01,reversal,6100 Freight Expense,CC-104,0.0,121699.96,ESTIMATE – synthetic data: reversal of ACR-202502
+REV-202502,2025-03-01,reversal,6100 Freight Expense,CC-105,0.0,51100.73,ESTIMATE – synthetic data: reversal of ACR-202502
+REV-202502,2025-03-01,reversal,2150 Accrued Freight,,530591.68,0.0,ESTIMATE – synthetic data: reversal of ACR-202502
+ACR-202503,2025-03-31,accrual,6100 Freight Expense,CC-101,112090.22,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-03-31 and not yet invoiced
+ACR-202503,2025-03-31,accrual,6100 Freight Expense,CC-102,103868.8,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-03-31 and not yet invoiced
+ACR-202503,2025-03-31,accrual,6100 Freight Expense,CC-103,116735.23,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-03-31 and not yet invoiced
+ACR-202503,2025-03-31,accrual,6100 Freight Expense,CC-104,116828.22,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-03-31 and not yet invoiced
+ACR-202503,2025-03-31,accrual,6100 Freight Expense,CC-105,58144.57,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-03-31 and not yet invoiced
+ACR-202503,2025-03-31,accrual,2150 Accrued Freight,,0.0,507667.04,ESTIMATE – synthetic data: accrual of freight delivered through 2025-03-31 and not yet invoiced
+REV-202503,2025-04-01,reversal,6100 Freight Expense,CC-101,0.0,112090.22,ESTIMATE – synthetic data: reversal of ACR-202503
+REV-202503,2025-04-01,reversal,6100 Freight Expense,CC-102,0.0,103868.8,ESTIMATE – synthetic data: reversal of ACR-202503
+REV-202503,2025-04-01,reversal,6100 Freight Expense,CC-103,0.0,116735.23,ESTIMATE – synthetic data: reversal of ACR-202503
+REV-202503,2025-04-01,reversal,6100 Freight Expense,CC-104,0.0,116828.22,ESTIMATE – synthetic data: reversal of ACR-202503
+REV-202503,2025-04-01,reversal,6100 Freight Expense,CC-105,0.0,58144.57,ESTIMATE – synthetic data: reversal of ACR-202503
+REV-202503,2025-04-01,reversal,2150 Accrued Freight,,507667.04,0.0,ESTIMATE – synthetic data: reversal of ACR-202503
+ACR-202504,2025-04-30,accrual,6100 Freight Expense,CC-101,114333.9,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-04-30 and not yet invoiced
+ACR-202504,2025-04-30,accrual,6100 Freight Expense,CC-102,101981.31,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-04-30 and not yet invoiced
+ACR-202504,2025-04-30,accrual,6100 Freight Expense,CC-103,146305.48,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-04-30 and not yet invoiced
+ACR-202504,2025-04-30,accrual,6100 Freight Expense,CC-104,148011.02,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-04-30 and not yet invoiced
+ACR-202504,2025-04-30,accrual,6100 Freight Expense,CC-105,56505.38,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-04-30 and not yet invoiced
+ACR-202504,2025-04-30,accrual,2150 Accrued Freight,,0.0,567137.09,ESTIMATE – synthetic data: accrual of freight delivered through 2025-04-30 and not yet invoiced
+REV-202504,2025-05-01,reversal,6100 Freight Expense,CC-101,0.0,114333.9,ESTIMATE – synthetic data: reversal of ACR-202504
+REV-202504,2025-05-01,reversal,6100 Freight Expense,CC-102,0.0,101981.31,ESTIMATE – synthetic data: reversal of ACR-202504
+REV-202504,2025-05-01,reversal,6100 Freight Expense,CC-103,0.0,146305.48,ESTIMATE – synthetic data: reversal of ACR-202504
+REV-202504,2025-05-01,reversal,6100 Freight Expense,CC-104,0.0,148011.02,ESTIMATE – synthetic data: reversal of ACR-202504
+REV-202504,2025-05-01,reversal,6100 Freight Expense,CC-105,0.0,56505.38,ESTIMATE – synthetic data: reversal of ACR-202504
+REV-202504,2025-05-01,reversal,2150 Accrued Freight,,567137.09,0.0,ESTIMATE – synthetic data: reversal of ACR-202504
+ACR-202505,2025-05-31,accrual,6100 Freight Expense,CC-101,124230.03,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-05-31 and not yet invoiced
+ACR-202505,2025-05-31,accrual,6100 Freight Expense,CC-102,113251.35,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-05-31 and not yet invoiced
+ACR-202505,2025-05-31,accrual,6100 Freight Expense,CC-103,121026.01,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-05-31 and not yet invoiced
+ACR-202505,2025-05-31,accrual,6100 Freight Expense,CC-104,123195.6,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-05-31 and not yet invoiced
+ACR-202505,2025-05-31,accrual,6100 Freight Expense,CC-105,64143.17,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-05-31 and not yet invoiced
+ACR-202505,2025-05-31,accrual,2150 Accrued Freight,,0.0,545846.16,ESTIMATE – synthetic data: accrual of freight delivered through 2025-05-31 and not yet invoiced
+REV-202505,2025-06-01,reversal,6100 Freight Expense,CC-101,0.0,124230.03,ESTIMATE – synthetic data: reversal of ACR-202505
+REV-202505,2025-06-01,reversal,6100 Freight Expense,CC-102,0.0,113251.35,ESTIMATE – synthetic data: reversal of ACR-202505
+REV-202505,2025-06-01,reversal,6100 Freight Expense,CC-103,0.0,121026.01,ESTIMATE – synthetic data: reversal of ACR-202505
+REV-202505,2025-06-01,reversal,6100 Freight Expense,CC-104,0.0,123195.6,ESTIMATE – synthetic data: reversal of ACR-202505
+REV-202505,2025-06-01,reversal,6100 Freight Expense,CC-105,0.0,64143.17,ESTIMATE – synthetic data: reversal of ACR-202505
+REV-202505,2025-06-01,reversal,2150 Accrued Freight,,545846.16,0.0,ESTIMATE – synthetic data: reversal of ACR-202505
+ACR-202506,2025-06-30,accrual,6100 Freight Expense,CC-101,103457.21,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-06-30 and not yet invoiced
+ACR-202506,2025-06-30,accrual,6100 Freight Expense,CC-102,132584.9,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-06-30 and not yet invoiced
+ACR-202506,2025-06-30,accrual,6100 Freight Expense,CC-103,158437.15,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-06-30 and not yet invoiced
+ACR-202506,2025-06-30,accrual,6100 Freight Expense,CC-104,122171.82,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-06-30 and not yet invoiced
+ACR-202506,2025-06-30,accrual,6100 Freight Expense,CC-105,81602.11,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-06-30 and not yet invoiced
+ACR-202506,2025-06-30,accrual,2150 Accrued Freight,,0.0,598253.19,ESTIMATE – synthetic data: accrual of freight delivered through 2025-06-30 and not yet invoiced
+REV-202506,2025-07-01,reversal,6100 Freight Expense,CC-101,0.0,103457.21,ESTIMATE – synthetic data: reversal of ACR-202506
+REV-202506,2025-07-01,reversal,6100 Freight Expense,CC-102,0.0,132584.9,ESTIMATE – synthetic data: reversal of ACR-202506
+REV-202506,2025-07-01,reversal,6100 Freight Expense,CC-103,0.0,158437.15,ESTIMATE – synthetic data: reversal of ACR-202506
+REV-202506,2025-07-01,reversal,6100 Freight Expense,CC-104,0.0,122171.82,ESTIMATE – synthetic data: reversal of ACR-202506
+REV-202506,2025-07-01,reversal,6100 Freight Expense,CC-105,0.0,81602.11,ESTIMATE – synthetic data: reversal of ACR-202506
+REV-202506,2025-07-01,reversal,2150 Accrued Freight,,598253.19,0.0,ESTIMATE – synthetic data: reversal of ACR-202506
+ACR-202507,2025-07-31,accrual,6100 Freight Expense,CC-101,104331.2,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-07-31 and not yet invoiced
+ACR-202507,2025-07-31,accrual,6100 Freight Expense,CC-102,104740.86,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-07-31 and not yet invoiced
+ACR-202507,2025-07-31,accrual,6100 Freight Expense,CC-103,95103.38,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-07-31 and not yet invoiced
+ACR-202507,2025-07-31,accrual,6100 Freight Expense,CC-104,113317.8,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-07-31 and not yet invoiced
+ACR-202507,2025-07-31,accrual,6100 Freight Expense,CC-105,72865.19,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-07-31 and not yet invoiced
+ACR-202507,2025-07-31,accrual,2150 Accrued Freight,,0.0,490358.43,ESTIMATE – synthetic data: accrual of freight delivered through 2025-07-31 and not yet invoiced
+REV-202507,2025-08-01,reversal,6100 Freight Expense,CC-101,0.0,104331.2,ESTIMATE – synthetic data: reversal of ACR-202507
+REV-202507,2025-08-01,reversal,6100 Freight Expense,CC-102,0.0,104740.86,ESTIMATE – synthetic data: reversal of ACR-202507
+REV-202507,2025-08-01,reversal,6100 Freight Expense,CC-103,0.0,95103.38,ESTIMATE – synthetic data: reversal of ACR-202507
+REV-202507,2025-08-01,reversal,6100 Freight Expense,CC-104,0.0,113317.8,ESTIMATE – synthetic data: reversal of ACR-202507
+REV-202507,2025-08-01,reversal,6100 Freight Expense,CC-105,0.0,72865.19,ESTIMATE – synthetic data: reversal of ACR-202507
+REV-202507,2025-08-01,reversal,2150 Accrued Freight,,490358.43,0.0,ESTIMATE – synthetic data: reversal of ACR-202507
+ACR-202508,2025-08-31,accrual,6100 Freight Expense,CC-101,110578.08,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-08-31 and not yet invoiced
+ACR-202508,2025-08-31,accrual,6100 Freight Expense,CC-102,137989.14,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-08-31 and not yet invoiced
+ACR-202508,2025-08-31,accrual,6100 Freight Expense,CC-103,132055.22,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-08-31 and not yet invoiced
+ACR-202508,2025-08-31,accrual,6100 Freight Expense,CC-104,137418.55,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-08-31 and not yet invoiced
+ACR-202508,2025-08-31,accrual,6100 Freight Expense,CC-105,69225.72,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-08-31 and not yet invoiced
+ACR-202508,2025-08-31,accrual,2150 Accrued Freight,,0.0,587266.71,ESTIMATE – synthetic data: accrual of freight delivered through 2025-08-31 and not yet invoiced
+REV-202508,2025-09-01,reversal,6100 Freight Expense,CC-101,0.0,110578.08,ESTIMATE – synthetic data: reversal of ACR-202508
+REV-202508,2025-09-01,reversal,6100 Freight Expense,CC-102,0.0,137989.14,ESTIMATE – synthetic data: reversal of ACR-202508
+REV-202508,2025-09-01,reversal,6100 Freight Expense,CC-103,0.0,132055.22,ESTIMATE – synthetic data: reversal of ACR-202508
+REV-202508,2025-09-01,reversal,6100 Freight Expense,CC-104,0.0,137418.55,ESTIMATE – synthetic data: reversal of ACR-202508
+REV-202508,2025-09-01,reversal,6100 Freight Expense,CC-105,0.0,69225.72,ESTIMATE – synthetic data: reversal of ACR-202508
+REV-202508,2025-09-01,reversal,2150 Accrued Freight,,587266.71,0.0,ESTIMATE – synthetic data: reversal of ACR-202508
+ACR-202509,2025-09-30,accrual,6100 Freight Expense,CC-101,140297.95,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-09-30 and not yet invoiced
+ACR-202509,2025-09-30,accrual,6100 Freight Expense,CC-102,96258.62,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-09-30 and not yet invoiced
+ACR-202509,2025-09-30,accrual,6100 Freight Expense,CC-103,174893.59,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-09-30 and not yet invoiced
+ACR-202509,2025-09-30,accrual,6100 Freight Expense,CC-104,166070.74,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-09-30 and not yet invoiced
+ACR-202509,2025-09-30,accrual,6100 Freight Expense,CC-105,79430.01,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-09-30 and not yet invoiced
+ACR-202509,2025-09-30,accrual,2150 Accrued Freight,,0.0,656950.91,ESTIMATE – synthetic data: accrual of freight delivered through 2025-09-30 and not yet invoiced
+REV-202509,2025-10-01,reversal,6100 Freight Expense,CC-101,0.0,140297.95,ESTIMATE – synthetic data: reversal of ACR-202509
+REV-202509,2025-10-01,reversal,6100 Freight Expense,CC-102,0.0,96258.62,ESTIMATE – synthetic data: reversal of ACR-202509
+REV-202509,2025-10-01,reversal,6100 Freight Expense,CC-103,0.0,174893.59,ESTIMATE – synthetic data: reversal of ACR-202509
+REV-202509,2025-10-01,reversal,6100 Freight Expense,CC-104,0.0,166070.74,ESTIMATE – synthetic data: reversal of ACR-202509
+REV-202509,2025-10-01,reversal,6100 Freight Expense,CC-105,0.0,79430.01,ESTIMATE – synthetic data: reversal of ACR-202509
+REV-202509,2025-10-01,reversal,2150 Accrued Freight,,656950.91,0.0,ESTIMATE – synthetic data: reversal of ACR-202509
+ACR-202510,2025-10-31,accrual,6100 Freight Expense,CC-101,129309.62,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-10-31 and not yet invoiced
+ACR-202510,2025-10-31,accrual,6100 Freight Expense,CC-102,122079.17,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-10-31 and not yet invoiced
+ACR-202510,2025-10-31,accrual,6100 Freight Expense,CC-103,160532.71,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-10-31 and not yet invoiced
+ACR-202510,2025-10-31,accrual,6100 Freight Expense,CC-104,129802.69,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-10-31 and not yet invoiced
+ACR-202510,2025-10-31,accrual,6100 Freight Expense,CC-105,85534.72,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-10-31 and not yet invoiced
+ACR-202510,2025-10-31,accrual,2150 Accrued Freight,,0.0,627258.91,ESTIMATE – synthetic data: accrual of freight delivered through 2025-10-31 and not yet invoiced
+REV-202510,2025-11-01,reversal,6100 Freight Expense,CC-101,0.0,129309.62,ESTIMATE – synthetic data: reversal of ACR-202510
+REV-202510,2025-11-01,reversal,6100 Freight Expense,CC-102,0.0,122079.17,ESTIMATE – synthetic data: reversal of ACR-202510
+REV-202510,2025-11-01,reversal,6100 Freight Expense,CC-103,0.0,160532.71,ESTIMATE – synthetic data: reversal of ACR-202510
+REV-202510,2025-11-01,reversal,6100 Freight Expense,CC-104,0.0,129802.69,ESTIMATE – synthetic data: reversal of ACR-202510
+REV-202510,2025-11-01,reversal,6100 Freight Expense,CC-105,0.0,85534.72,ESTIMATE – synthetic data: reversal of ACR-202510
+REV-202510,2025-11-01,reversal,2150 Accrued Freight,,627258.91,0.0,ESTIMATE – synthetic data: reversal of ACR-202510
+ACR-202511,2025-11-30,accrual,6100 Freight Expense,CC-101,149554.76,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-11-30 and not yet invoiced
+ACR-202511,2025-11-30,accrual,6100 Freight Expense,CC-102,138978.49,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-11-30 and not yet invoiced
+ACR-202511,2025-11-30,accrual,6100 Freight Expense,CC-103,140238.46,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-11-30 and not yet invoiced
+ACR-202511,2025-11-30,accrual,6100 Freight Expense,CC-104,153315.55,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-11-30 and not yet invoiced
+ACR-202511,2025-11-30,accrual,6100 Freight Expense,CC-105,76076.5,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-11-30 and not yet invoiced
+ACR-202511,2025-11-30,accrual,2150 Accrued Freight,,0.0,658163.76,ESTIMATE – synthetic data: accrual of freight delivered through 2025-11-30 and not yet invoiced
+REV-202511,2025-12-01,reversal,6100 Freight Expense,CC-101,0.0,149554.76,ESTIMATE – synthetic data: reversal of ACR-202511
+REV-202511,2025-12-01,reversal,6100 Freight Expense,CC-102,0.0,138978.49,ESTIMATE – synthetic data: reversal of ACR-202511
+REV-202511,2025-12-01,reversal,6100 Freight Expense,CC-103,0.0,140238.46,ESTIMATE – synthetic data: reversal of ACR-202511
+REV-202511,2025-12-01,reversal,6100 Freight Expense,CC-104,0.0,153315.55,ESTIMATE – synthetic data: reversal of ACR-202511
+REV-202511,2025-12-01,reversal,6100 Freight Expense,CC-105,0.0,76076.5,ESTIMATE – synthetic data: reversal of ACR-202511
+REV-202511,2025-12-01,reversal,2150 Accrued Freight,,658163.76,0.0,ESTIMATE – synthetic data: reversal of ACR-202511
+ACR-202512,2025-12-31,accrual,6100 Freight Expense,CC-101,100681.28,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-12-31 and not yet invoiced
+ACR-202512,2025-12-31,accrual,6100 Freight Expense,CC-102,116636.16,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-12-31 and not yet invoiced
+ACR-202512,2025-12-31,accrual,6100 Freight Expense,CC-103,169738.7,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-12-31 and not yet invoiced
+ACR-202512,2025-12-31,accrual,6100 Freight Expense,CC-104,144033.77,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-12-31 and not yet invoiced
+ACR-202512,2025-12-31,accrual,6100 Freight Expense,CC-105,71937.66,0.0,ESTIMATE – synthetic data: accrual of freight delivered through 2025-12-31 and not yet invoiced
+ACR-202512,2025-12-31,accrual,2150 Accrued Freight,,0.0,603027.57,ESTIMATE – synthetic data: accrual of freight delivered through 2025-12-31 and not yet invoiced
+REV-202512,2026-01-01,reversal,6100 Freight Expense,CC-101,0.0,100681.28,ESTIMATE – synthetic data: reversal of ACR-202512
+REV-202512,2026-01-01,reversal,6100 Freight Expense,CC-102,0.0,116636.16,ESTIMATE – synthetic data: reversal of ACR-202512
+REV-202512,2026-01-01,reversal,6100 Freight Expense,CC-103,0.0,169738.7,ESTIMATE – synthetic data: reversal of ACR-202512
+REV-202512,2026-01-01,reversal,6100 Freight Expense,CC-104,0.0,144033.77,ESTIMATE – synthetic data: reversal of ACR-202512
+REV-202512,2026-01-01,reversal,6100 Freight Expense,CC-105,0.0,71937.66,ESTIMATE – synthetic data: reversal of ACR-202512
+REV-202512,2026-01-01,reversal,2150 Accrued Freight,,603027.57,0.0,ESTIMATE – synthetic data: reversal of ACR-202512

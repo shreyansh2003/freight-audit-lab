@@ -61,7 +61,10 @@ REQUIRED_KEYS = [
     "evaluation.analyst_cost_per_hour", "evaluation.false_dispute_cost",
     "evaluation.systemic.window_months", "evaluation.systemic.multiple",
     "evaluation.systemic.min_invoices", "evaluation.systemic.min_flags", "evaluation.systemic.alpha",
-    "evaluation.min_material_gain", "evaluation.top_n_invoices",
+    "evaluation.min_material_gain",
+    # Stage 6
+    "accruals.trailing_days", "accruals.default_accessorial_per_shipment.LTL",
+    "accruals.default_accessorial_per_shipment.TL", "accruals.accounts.expense", "accruals.accounts.liability", "evaluation.top_n_invoices",
 ]
 
 CARRIER_KEYS = ["id", "name", "mode", "format", "lag_median_days", "error_multiplier",

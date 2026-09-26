@@ -414,3 +414,54 @@ recommended_tolerances.json, systemic_findings.csv).
   flags within a window are treated as independent. *Change:* `evaluation.systemic`.
 - **Fuel-schedule diagnosis is not attempted.** The template says fuel was billed above schedule and by how
   much on average, and asks for the carrier's fuel table; it does not guess a cause such as a wrong diesel week.
+
+
+## Month-end accruals (Stage 6)
+
+Result numbers are not quoted here; read them from `outputs/accrual_accuracy.csv` and `outputs/accruals_detail.csv`.
+
+- **Population: delivered, not billed.** At each month-end M the accrual covers shipments with
+  `delivery_date <= M` and no matched original or rebill invoice received on or before M. **In-transit
+  shipments are not accrued**: expense is recognized at delivery, so a shipment shipped on the 28th and
+  delivered on the 3rd belongs to the next month. A shipment stays in the population, and is accrued again,
+  at every month-end until an invoice for it is received. A balance-due invoice bills one extra charge, not the
+  shipment, so it does not remove a shipment from the population. An unmatched (phantom-looking) invoice
+  bills no shipment, so a shipment whose invoice could not be matched stays accrued for good; the default data
+  has one such shipment (the typo'd-BOL invoice from the Stage 4 limitation), and accuracy counts it as
+  billed $0 (`never_billed_shipments`). *Change:* not configurable (it is what the cutoff means).
+- **"Billed at M" uses only what was known at M, including invoices superseded later.** An invoice received on
+  or before M bills its shipment even if a rebill received after M replaces it: the shipper had the bill in hand
+  at M. Supersession is used only if it was known at M. To support that, normalization records `superseded_on`
+  (the received date of the replacing rebill) on the superseded invoice, and the accrual treats an invoice as
+  superseded at M only if `superseded_on <= M`. `is_superseded` (the final state) is never read when accruing.
+  It is read when measuring accuracy, which looks forward on purpose.
+- **Estimate per shipment** = contract linehaul at the shipment's own weight and the rate row effective on
+  the ship date + expected fuel surcharge on the ship-week diesel price + an accessorial allowance, each rounded
+  to cents (`_estimate` columns). Reweigh certificates are not used: the shipper does not know a shipment will
+  be reweighed when it accrues. Diesel is published by the start of the ship week, always before M for a
+  delivered shipment, so it never looks ahead.
+- **Accessorial allowance** = the carrier's authorized accessorial dollars per billed shipment over invoices
+  *received* in the trailing `accruals.trailing_days` up to M: accessorial charge lines (liftgate,
+  residential, detention) whose shipment and code have an authorization recorded on or before M, divided by
+  the number of distinct shipments the carrier billed in the window (original and rebill invoices; balance-due
+  lines count in the dollars, not the shipments). Invoices already known at M to be superseded are left out.
+  A carrier with no invoices in the window gets `accruals.default_accessorial_per_shipment` for its mode. The
+  allowance is the same for every shipment of a carrier at M. Because 25% of authorizations are recorded late
+  (`accessorials.late_authorization_share`), some real accessorials are not yet "authorized" at M and drop out
+  of the history, so the allowance runs low: a real feature of accruing from what the books know at M.
+- **Journal entries** (`journal_entries.csv`) are built in whole cents. At M: Dr `6100 Freight Expense`, one
+  line per cost center, and Cr `2150 Accrued Freight` for the total (the credit line has no cost center). On
+  day 1 of M+1 the exact mirror image, with `je_id` `ACR-YYYYMM` and `REV-YYYYMM`. The December accrual's
+  reversal is dated 2026-01-01, after the period ends. Every memo starts "ESTIMATE – synthetic data".
+  Posting the invoices to AP is out of scope: the reversal plus the invoice posting is the true-up.
+  *Change:* `accruals.accounts`.
+- **Accuracy looks forward.** For the shipments accrued at M, `actual_billed` is the sum of their final
+  (non-superseded) matched invoices, balance-due included, and `actual_payable_estimate` is billed less the
+  audit's recoverable estimate (the shipper owes the right amount, not the billed amount). It is an estimate
+  because the recoverable dollars are. A recoverable dollar counts as accessorial if it comes from an
+  unauthorized-accessorial flag, as linehaul + fuel if it comes from a rate, fuel or weight flag, and is
+  split by the invoice's own lines when the whole invoice is recoverable (duplicate or phantom). Error =
+  accrual - payable (positive = over-accrued), as a share of payable. Each month's accuracy covers that
+  month's own accrual population, so a shipment accrued at three month-ends appears in three months.
+  `accuracy_summary` reports MAPE (mean absolute monthly error %) and bias (mean signed monthly error %).
+  Errors from injected errors the audit did not flag (below tolerance) stay in payable, by design.

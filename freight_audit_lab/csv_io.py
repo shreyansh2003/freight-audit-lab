@@ -16,7 +16,7 @@ ID_COLUMNS = ["bol", "bol_raw", "bol_canonical", "pro_number", "invoice_number",
 
 # Columns holding dates in our own (ISO) files, parsed to Timestamps when present.
 DATE_COLUMNS = ["ship_date", "delivery_date", "invoice_date", "received_date", "authorized_at",
-                "certified_at", "effective_from", "effective_to", "week_start"]
+                "certified_at", "superseded_on", "effective_from", "effective_to", "week_start"]
 
 
 def read_csv(path, **kwargs):

@@ -33,8 +33,9 @@ def flag(invoice_id, error_type, reason, impact, shipment_id="", billed=np.nan, 
 
 
 def flags_frame(rows):
-    """Flags as a DataFrame with the standard columns (empty is fine)."""
-    return pd.DataFrame(rows, columns=FLAG_COLUMNS)
+    """Flags as a DataFrame with the standard columns (empty is fine). Dollar columns are always float."""
+    df = pd.DataFrame(rows, columns=FLAG_COLUMNS)
+    return df.astype({"dollar_impact_estimate": float, "billed_value": float, "expected_value": float})
 
 
 # ---------------------------------------------------------------- 1. duplicates

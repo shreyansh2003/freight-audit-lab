@@ -34,7 +34,7 @@ def apply_recoverable(flags, invoices):
     counted = flags[flags["counted_in_recoverable"]].groupby("invoice_id")["dollar_impact_estimate"].sum()
     totals = invoices.set_index("invoice_id")["total"]
     recoverable = pd.concat([counted, totals.reindex(counted.index)], axis=1).min(axis=1).round(2)
-    return flags, recoverable.rename("recoverable_estimate")
+    return flags, recoverable.astype(float).rename("recoverable_estimate")
 
 
 def process_metrics(rerated):

@@ -66,7 +66,7 @@ LAYOUTS = {
 INVOICE_COLUMNS = ["invoice_id", "carrier_id", "invoice_number", "pro_number", "bol_raw", "bol_canonical",
                    "invoice_type", "supersedes_invoice_number", "invoice_date", "received_date", "ship_date",
                    "origin", "destination", "billed_weight_lbs", "total", "source_file",
-                   "is_superseded", "shipment_id", "match_method", "lines_total", "totals_ok"]
+                   "is_superseded", "superseded_on", "shipment_id", "match_method", "lines_total", "totals_ok"]
 EXCEPTION_COLUMNS = ["source_file", "csv_row", "carrier_id", "control_id", "exception_type", "raw_value", "detail"]
 
 
@@ -285,9 +285,11 @@ def mark_superseded(inv, rec):
     whose invoice number it cites (formats B and D) or, where only the pro suffix marks it
     (A and C), the one sharing its base pro number. A balance-due invoice is a supplement,
     never the invoice being replaced. Rebills are processed in received order so a rebill of
-    a rebill supersedes the earlier rebill.
+    a rebill supersedes the earlier rebill. `superseded_on` is the received date of the replacing
+    rebill: the date the shipper *learned* the invoice was replaced (accruals must not use it earlier).
     """
     inv["is_superseded"] = False
+    inv["superseded_on"] = pd.Series(pd.NaT, index=inv.index, dtype="datetime64[ns]")
     for i, r in inv[inv["invoice_type"] == "rebill"].sort_values(["received_date", "control_id"]).iterrows():
         cand = ((inv["carrier_id"] == r["carrier_id"]) & (inv["invoice_type"] != "balance_due")
                 & (inv["received_date"] < r["received_date"]) & ~inv["is_superseded"])
@@ -299,6 +301,7 @@ def mark_superseded(inv, rec):
             continue
         target = inv[cand].sort_values(["received_date", "control_id"]).index[-1]
         inv.loc[target, "is_superseded"] = True
+        inv.loc[target, "superseded_on"] = r["received_date"]
         inv.loc[i, "supersedes_invoice_number"] = inv.loc[target, "invoice_number"]
 
 

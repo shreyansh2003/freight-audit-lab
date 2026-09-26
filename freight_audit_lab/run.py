@@ -4,11 +4,12 @@ Stages 1-2: generate reference data, invoices, raw carrier files, and the answer
 Stage 3: normalize the raw files and match invoices to shipments.
 Stage 4: re-rate against the contract, audit with the rules, run the naive baseline.
 Stage 5: score against the answer key, sweep tolerances, build the exception queue and disputes.
-Later stages append accruals and so on.
+Stage 6: month-end accruals, journal entries, and accrual accuracy.
 """
 
 import time
 
+from freight_audit_lab.accruals import accuracy_summary, run_accruals, write_accruals
 from freight_audit_lab.audit.baseline import run_baseline, write_baseline
 from freight_audit_lab.audit.engine import audit, write_audit
 from freight_audit_lab.audit.rules import RULES
@@ -94,6 +95,16 @@ def main():
     write_exceptions(queue, disputes, findings)
     print(f"exceptions: {time.perf_counter() - t0:.1f}s  ({len(queue)} open exceptions, "
           f"{len(findings)} systemic findings, {len(disputes)} dispute packs)")
+
+    t0 = time.perf_counter()
+    accruals = run_accruals(normalized, ref, cfg, engine)
+    write_accruals(accruals)
+    total = accruals["accuracy"].iloc[-1]
+    headline = accuracy_summary(accruals["accuracy"])
+    print(f"accruals: {time.perf_counter() - t0:.1f}s  ({int(total['shipments_accrued'])} shipment-month accruals, "
+          f"{len(accruals['journal_entries'])} journal lines)")
+    print(f"  accrual vs payable (estimates): error {total['error_pct_estimate']:+.2%} overall, "
+          f"MAPE {headline['mape_pct_estimate']:.2%}, bias {headline['bias_pct_estimate']:+.2%}")
 
 
 def print_flag_comparison(engine, baseline):

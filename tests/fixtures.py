@@ -24,6 +24,7 @@ import copy
 
 import pandas as pd
 
+from freight_audit_lab.accruals import run_accruals
 from freight_audit_lab.audit.baseline import run_baseline
 from freight_audit_lab.audit.engine import audit
 from freight_audit_lab.config import load_config
@@ -45,6 +46,8 @@ SHIPMENTS = {
     "S7": ("00000007", "CARA", "L3", "LTL", 1000, "2025-08-04", 220.00, 19.80),
 }
 CERTIFIED_WEIGHT = {"S3": 1100}
+COST_CENTERS = {"S1": "CC-101", "S2": "CC-101", "S3": "CC-102", "S4": "CC-103", "S5": "CC-102", "S6": "CC-101", "S7": "CC-103"}
+DELIVERY_DAYS = 2                    # every shipment is delivered two days after it ships
 DEFAULT_AUTHS = [("S1", "RESIDENTIAL", 125.0, "2025-03-05"),     # a different code than the one billed
                  ("S5", "LIFTGATE", 95.0, "2025-03-25")]         # recorded after the invoice date
 
@@ -68,7 +71,8 @@ def make_ref(extra_auths=()):
     """The reference tables the re-rater reads. `extra_auths`: more (shipment, code, amount, date)."""
     shipments = pd.DataFrame([
         {"shipment_id": sid, "bol": bol, "ship_date": TS(day), "lane_id": lane, "mode": mode,
-         "miles": 600 if lane == "L2" else 500, "carrier_id": carrier, "weight_lbs": weight}
+         "miles": 600 if lane == "L2" else 500, "carrier_id": carrier, "weight_lbs": weight,
+         "delivery_date": TS(day) + pd.Timedelta(days=DELIVERY_DAYS), "cost_center": COST_CENTERS[sid]}
         for sid, (bol, carrier, lane, mode, weight, day, _, _) in SHIPMENTS.items()])
     lanes = pd.DataFrame([
         {"lane_id": "L1", "origin_city": "Chicago", "destination_city": "Atlanta", "miles": 500},
@@ -95,7 +99,7 @@ def make_ref(extra_auths=()):
 
 def invoice(iid, shipment="S1", *, lh="clean", fsc="clean", acc=(), weight="clean", itype="original",
             invoice_date="2025-03-15", received="2025-03-18", number=None, superseded=False, match="exact",
-            bol=None, carrier=None):
+            bol=None, carrier=None, superseded_on=None):
     """One normalized invoice as a spec dict. lh/fsc default to the clean contract amounts of the
     shipment; pass None to leave the line off (balance-due invoices); `acc` is [(code, amount)]."""
     bol_text, ship_carrier, _, _, ship_weight, day, clean_lh, clean_fsc = SHIPMENTS[shipment]
@@ -105,7 +109,7 @@ def invoice(iid, shipment="S1", *, lh="clean", fsc="clean", acc=(), weight="clea
             "invoice_date": TS(invoice_date), "received_date": TS(received), "ship_date": TS(day),
             "origin": "Chicago", "destination": "Atlanta",
             "billed_weight_lbs": ship_weight if weight == "clean" else weight,
-            "is_superseded": superseded, "shipment_id": "" if match == "unmatched" else shipment,
+            "is_superseded": superseded, "superseded_on": TS(superseded_on) if superseded_on else pd.NaT, "shipment_id": "" if match == "unmatched" else shipment,
             "match_method": match,
             "_lh": clean_lh if lh == "clean" else lh, "_fsc": clean_fsc if fsc == "clean" else fsc,
             "_acc": list(acc)}
@@ -122,8 +126,10 @@ def build_norm(specs):
         total = round(sum(amount for _, amount in lines_here), 2)
         rows.append({**{k: v for k, v in spec.items() if not k.startswith("_")}, "total": total,
                      "lines_total": total, "totals_ok": True, "source_file": "raw/test.csv"})
-    inv = pd.DataFrame(rows)
+    inv = pd.DataFrame(rows, columns=None if rows else list(invoice("T")) + ["total", "lines_total", "totals_ok", "source_file"])
+    inv = inv.drop(columns=[c for c in inv.columns if c.startswith("_")])
     inv["billed_weight_lbs"] = inv["billed_weight_lbs"].astype("Int64")
+    inv["superseded_on"] = pd.to_datetime(inv["superseded_on"])
     return {"invoices": inv, "invoice_lines": pd.DataFrame(lines, columns=["invoice_id", "charge_code", "amount"])}
 
 
@@ -136,11 +142,14 @@ def audit_inputs(specs, cfg=None, extra_auths=()):
 
 
 def run_pipeline(data_dir, cfg):
-    """normalize -> rerate -> audit -> baseline on a generated data directory. Returns every result frame."""
+    """normalize -> rerate -> audit -> baseline -> accruals on a generated data directory. Returns every result frame."""
     norm = normalize(cfg, data_dir)
     ref = load_reference(data_dir)
     rerated = rerate(norm, ref, cfg)
+    engine = audit(norm, rerated, ref, cfg)
+    accrued = run_accruals(norm, ref, cfg, engine)
     return {"invoices": norm["invoices"], "invoice_lines": norm["invoice_lines"],
             "rerated_invoices": rerated["invoices"], "rerated_accessorials": rerated["accessorials"],
-            **{f"audit_{k}": v for k, v in audit(norm, rerated, ref, cfg).items()},
-            "baseline_flags": run_baseline(norm, ref, cfg)["flags"]}
+            **{f"audit_{k}": v for k, v in engine.items()},
+            "baseline_flags": run_baseline(norm, ref, cfg)["flags"],
+            **{f"accrual_{k}": v for k, v in accrued.items()}}
